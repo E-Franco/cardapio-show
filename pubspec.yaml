@@ -1,4 +1,4 @@
-name: cardapio_app
+name: cardapio_show
 description: Aplicativo para gerenciamento de cardápios digitais.
 publish_to: 'none'
 version: 1.0.0+1
@@ -32,6 +32,8 @@ dependencies:
   flutter_svg: ^2.0.9
   connectivity_plus: ^5.0.1
   flutter_secure_storage: ^9.0.0
+  flutter_spinkit: ^5.2.0
+  screenshot: ^2.1.0
 
 dev_dependencies:
   flutter_test:

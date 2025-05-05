@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cardapio_app/providers/error_provider.dart';
+import 'package:cardapio_show/providers/error_provider.dart';
 
 class ErrorDialog extends StatelessWidget {
   const ErrorDialog({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final errorProvider = Provider.of<ErrorProvider>(context);
+    final ErrorProvider errorProvider = Provider.of<ErrorProvider>(context);
     
     if (!errorProvider.isVisible) {
       return const SizedBox.shrink();
     }
     
-    final severity = errorProvider.severity;
-    final color = errorProvider.getColorForSeverity(severity);
-    final icon = errorProvider.getIconForSeverity(severity);
+    final ErrorSeverity severity = errorProvider.severity;
+    final Color color = errorProvider.getColorForSeverity(severity);
+    final IconData icon = errorProvider.getIconForSeverity(severity);
     
     return Positioned(
       bottom: 16,

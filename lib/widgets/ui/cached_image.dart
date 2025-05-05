@@ -18,7 +18,7 @@ class CachedImage extends StatelessWidget {
   final int maxHeightDiskCache;
   
   // Gerenciador de cache personalizado com limites
-  static final customCacheManager = CacheManager(
+  static final CacheManager customCacheManager = CacheManager(
     Config(
       'customCacheKey',
       stalePeriod: const Duration(days: 7),

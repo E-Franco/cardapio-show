@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:cardapio_web/models/product.dart';
-import 'package:cardapio_web/providers/error_provider.dart';
-import 'package:cardapio_web/services/upload_service.dart';
-import 'package:cardapio_web/widgets/ui/loading_indicator.dart';
+import 'package:cardapio_show/models/product.dart';
+import 'package:cardapio_show/providers/error_provider.dart';
+import 'package:cardapio_show/services/upload_service.dart';
+import 'package:cardapio_show/utils/constants.dart';
+import 'package:cardapio_show/widgets/ui/loading_indicator.dart';
 
 class AddProductForm extends StatefulWidget {
   final String menuId;
@@ -26,14 +27,15 @@ class AddProductForm extends StatefulWidget {
 }
 
 class _AddProductFormState extends State<AddProductForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   String? _imageUrl;
   File? _imageFile;
   bool _isLoading = false;
-  final _imagePicker = ImagePicker();
+  final ImagePicker _imagePicker = ImagePicker();
+  final UploadService _uploadService = UploadService();
 
   @override
   void initState() {
@@ -64,7 +66,7 @@ class _AddProductFormState extends State<AddProductForm> {
 
   Future<void> _pickImage() async {
     try {
-      final pickedFile = await _imagePicker.pickImage(
+      final XFile? pickedFile = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
       );
@@ -93,15 +95,15 @@ class _AddProductFormState extends State<AddProductForm> {
         
         // Upload new image if selected
         if (_imageFile != null) {
-          finalImageUrl = await UploadService().uploadProductImage(
+          finalImageUrl = await _uploadService.uploadProductImage(
             widget.menuId,
             _imageFile!,
           );
         }
         
-        final price = double.tryParse(_priceController.text.replaceAll(',', '.')) ?? 0.0;
+        final double price = double.tryParse(_priceController.text.replaceAll(',', '.')) ?? 0.0;
         
-        final product = Product(
+        final Product product = Product(
           id: widget.productToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
           menuId: widget.menuId,
           categoryId: widget.categoryId,
@@ -148,7 +150,7 @@ class _AddProductFormState extends State<AddProductForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.productToEdit != null;
+    final bool isEditing = widget.productToEdit != null;
     
     return Form(
       key: _formKey,
@@ -174,7 +176,7 @@ class _AddProductFormState extends State<AddProductForm> {
                         labelText: 'Nome do produto',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) {
+                      validator: (String? value) {
                         if (value == null || value.isEmpty) {
                           return 'Por favor, insira o nome do produto';
                         }
@@ -198,8 +200,8 @@ class _AddProductFormState extends State<AddProductForm> {
                         border: OutlineInputBorder(),
                         prefixText: 'R\$ ',
                       ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (String? value) {
                         if (value == null || value.isEmpty) {
                           return 'Por favor, insira o preço';
                         }
@@ -236,13 +238,13 @@ class _AddProductFormState extends State<AddProductForm> {
                                       ? Image.network(
                                           _imageUrl!,
                                           fit: BoxFit.cover,
-                                          loadingBuilder: (context, child, loadingProgress) {
+                                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
                                             if (loadingProgress == null) return child;
                                             return const Center(
                                               child: CircularProgressIndicator(),
                                             );
                                           },
-                                          errorBuilder: (context, error, stackTrace) {
+                                          errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
                                             return const Center(
                                               child: Icon(Icons.error),
                                             );

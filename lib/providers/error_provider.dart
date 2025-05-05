@@ -80,6 +80,33 @@ class ErrorProvider extends ChangeNotifier {
     notifyListeners();
   }
   
+  // Método setError para compatibilidade com código existente
+  void setError(String message, {String? title, ErrorSeverity severity = ErrorSeverity.error, Function? retryAction}) {
+    showError(
+      message: message,
+      title: title,
+      severity: severity,
+      retryAction: retryAction,
+    );
+  }
+
+  // Capturar erro (para compatibilidade com código existente)
+  void captureError(
+    dynamic error, {
+    String? title,
+    String? description,
+    ErrorSeverity severity = ErrorSeverity.error,
+    ErrorAction? action,
+  }) {
+    final String errorMessage = description ?? error.toString();
+    showError(
+      message: errorMessage,
+      title: title,
+      severity: severity,
+      retryAction: action?.onPressed,
+    );
+  }
+  
   // Obter título com base na severidade
   String _getTitleForSeverity(ErrorSeverity severity) {
     switch (severity) {
@@ -121,4 +148,14 @@ class ErrorProvider extends ChangeNotifier {
         return Icons.check_circle_outline;
     }
   }
+}
+
+class ErrorAction {
+  final String label;
+  final Function onPressed;
+
+  const ErrorAction({
+    required this.label,
+    required this.onPressed,
+  });
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cardapio_web/providers/auth_provider.dart';
-import 'package:cardapio_web/providers/error_provider.dart';
-import 'package:cardapio_web/widgets/ui/loading_indicator.dart';
+import 'package:cardapio_show/providers/auth_provider.dart';
+import 'package:cardapio_show/providers/error_provider.dart';
+import 'package:cardapio_show/utils/constants.dart';
+import 'package:cardapio_show/widgets/ui/loading_indicator.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -145,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: A16),
+                          const SizedBox(height: AppSpacing.md),
                           TextFormField(
                             controller: _confirmPasswordController,
                             obscureText: true,

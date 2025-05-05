@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:cardapio_app/providers/auth_provider.dart';
-import 'package:cardapio_app/providers/theme_provider.dart';
-import 'package:cardapio_app/providers/error_provider.dart';
-import 'package:cardapio_app/routes/router.dart';
-import 'package:cardapio_app/services/cache_service.dart';
+import 'package:cardapio_show/providers/auth_provider.dart';
+import 'package:cardapio_show/providers/theme_provider.dart';
+import 'package:cardapio_show/providers/error_provider.dart';
+import 'package:cardapio_show/routes/router.dart';
+import 'package:cardapio_show/services/cache_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,110 +1,120 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cardapio_app/models/menu.dart';
-import 'package:cardapio_app/models/user.dart';
+import 'package:cardapio_show/models/menu.dart';
+import 'package:cardapio_show/models/user.dart';
 
 class CacheService {
-  late SharedPreferences _prefs;
-  
-  // Chaves para armazenamento
-  static const String _userKey = 'user_data';
-  static const String _menusKey = 'user_menus';
+  static const String _userKey = 'user';
+  static const String _menusKey = 'menus';
   static const String _menuDetailsPrefix = 'menu_details_';
   static const String _menuProductsPrefix = 'menu_products_';
   
-  // Inicialização
+  late SharedPreferences _prefs;
+  
+  // Inicializar o serviço
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
   
-  // Métodos para usuário
+  // Salvar usuário no cache
   Future<void> saveUser(User user) async {
     await _prefs.setString(_userKey, jsonEncode(user.toJson()));
   }
   
+  // Obter usuário do cache
   User? getUser() {
-    final userJson = _prefs.getString(_userKey);
+    final String? userJson = _prefs.getString(_userKey);
     if (userJson == null) return null;
     
     try {
-      return User.fromJson(jsonDecode(userJson));
+      return User.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
     } catch (e) {
-      clearUser();
       return null;
     }
   }
   
+  // Limpar usuário do cache
   Future<void> clearUser() async {
     await _prefs.remove(_userKey);
   }
   
-  // Métodos para menus
+  // Salvar lista de menus no cache
   Future<void> saveMenus(List<Menu> menus) async {
-    final menusJson = menus.map((menu) => menu.toJson()).toList();
+    final List<Map<String, dynamic>> menusJson = menus.map((Menu menu) => menu.toJson()).toList();
     await _prefs.setString(_menusKey, jsonEncode(menusJson));
   }
   
+  // Obter lista de menus do cache
   List<Menu>? getMenus() {
-    final menusJson = _prefs.getString(_menusKey);
+    final String? menusJson = _prefs.getString(_menusKey);
     if (menusJson == null) return null;
     
     try {
-      final List<dynamic> decoded = jsonDecode(menusJson);
-      return decoded.map((json) => Menu.fromJson(json)).toList();
+      final List<dynamic> menusList = jsonDecode(menusJson) as List<dynamic>;
+      return menusList
+          .map((dynamic item) => Menu.fromJson(item as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       return null;
     }
   }
   
-  // Métodos para detalhes de menu específico
+  // Salvar detalhes de um menu no cache
   Future<void> saveMenuDetails(Menu menu) async {
-    await _prefs.setString('${_menuDetailsPrefix}${menu.id}', jsonEncode(menu.toJson()));
+    await _prefs.setString(_menuDetailsPrefix + menu.id, jsonEncode(menu.toJson()));
   }
   
+  // Obter detalhes de um menu do cache
   Menu? getMenuDetails(String menuId) {
-    final menuJson = _prefs.getString('${_menuDetailsPrefix}$menuId');
+    final String? menuJson = _prefs.getString(_menuDetailsPrefix + menuId);
     if (menuJson == null) return null;
     
     try {
-      return Menu.fromJson(jsonDecode(menuJson));
+      return Menu.fromJson(jsonDecode(menuJson) as Map<String, dynamic>);
     } catch (e) {
       return null;
     }
   }
   
-  // Métodos para produtos de um menu
+  // Salvar produtos de um menu no cache
   Future<void> saveMenuProducts(String menuId, List<dynamic> products) async {
-    await _prefs.setString('${_menuProductsPrefix}$menuId', jsonEncode(products));
+    await _prefs.setString(_menuProductsPrefix + menuId, jsonEncode(products));
   }
   
+  // Obter produtos de um menu do cache
   List<dynamic>? getMenuProducts(String menuId) {
-    final productsJson = _prefs.getString('${_menuProductsPrefix}$menuId');
+    final String? productsJson = _prefs.getString(_menuProductsPrefix + menuId);
     if (productsJson == null) return null;
     
     try {
-      return jsonDecode(productsJson);
+      return jsonDecode(productsJson) as List<dynamic>;
     } catch (e) {
       return null;
     }
   }
   
-  // Limpar cache
+  // Limpar detalhes de um menu do cache
+  Future<void> clearMenuDetails(String menuId) async {
+    await _prefs.remove(_menuDetailsPrefix + menuId);
+    await _prefs.remove(_menuProductsPrefix + menuId);
+  }
+  
+  // Limpar todo o cache
   Future<void> clearCache() async {
-    final keys = _prefs.getKeys();
+    final Set<String> keys = _prefs.getKeys();
     
-    for (final key in keys) {
-      if (key != _userKey) {
+    for (final String key in keys) {
+      if (key.startsWith(_menuDetailsPrefix) || 
+          key.startsWith(_menuProductsPrefix) ||
+          key == _menusKey) {
         await _prefs.remove(key);
       }
     }
   }
-  
-  // Verificar se há dados em cache
-  bool hasMenusCache() {
-    return _prefs.containsKey(_menusKey);
-  }
-  
-  bool hasMenuDetailsCache(String menuId) {
-    return _prefs.containsKey('${_menuDetailsPrefix}$menuId');
+}  ||
+          key == _menusKey) {
+        await _prefs.remove(key);
+      }
+    }
   }
 }

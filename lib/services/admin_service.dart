@@ -20,6 +20,38 @@ class AdminService {
       throw Exception('Erro ao buscar usuários: $e');
     }
   }
+
+  // Obter usuários com paginação e busca
+  Future<Map<String, dynamic>> getUsers({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    try {
+      final int offset = (page - 1) * limit;
+
+      var query = _supabase
+          .from('users')
+          .select('*', count: CountOption.exact);
+
+      if (search != null && search.isNotEmpty) {
+        query = query.or('name.ilike.%$search%,email.ilike.%$search%');
+      }
+
+      final response = await query
+          .order('name')
+          .range(offset, offset + limit - 1);
+
+      final List<User> users = (response.data as List).map((data) => User.fromJson(data)).toList();
+
+      return {
+        'users': users,
+        'count': response.count ?? 0,
+      };
+    } catch (e) {
+      throw Exception('Erro ao buscar usuários: $e');
+    }
+  }
   
   // Obter todos os menus
   Future<List<Menu>> getAllMenus() async {
@@ -38,6 +70,46 @@ class AdminService {
         };
         return Menu.fromJson(menuData);
       }).toList();
+    } catch (e) {
+      throw Exception('Erro ao buscar menus: $e');
+    }
+  }
+
+  // Obter todos os menus com paginação e busca
+  Future<Map<String, dynamic>> getAllMenus({
+    int page = 1,
+    int limit = 10,
+    String? search,
+  }) async {
+    try {
+      final int offset = (page - 1) * limit;
+
+      var query = _supabase
+          .from('menus')
+          .select('*, users:owner_id(name, email)', count: CountOption.exact);
+
+      if (search != null && search.isNotEmpty) {
+        query = query.or('name.ilike.%$search%,users.name.ilike.%$search%,users.email.ilike.%$search%');
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      final List<Menu> menus = (response.data as List).map((data) {
+        // Converter o formato do Supabase para o nosso modelo
+        final menuData = {
+          ...data,
+          'owner_name': data['users']['name'],
+          'owner_email': data['users']['email'],
+        };
+        return Menu.fromJson(menuData);
+      }).toList();
+
+      return {
+        'menus': menus,
+        'count': response.count ?? 0,
+      };
     } catch (e) {
       throw Exception('Erro ao buscar menus: $e');
     }
@@ -65,6 +137,30 @@ class AdminService {
       throw Exception('Erro ao atualizar usuário: $e');
     }
   }
+
+  // Atualizar função de usuário (admin/não admin)
+  Future<void> updateUserRole(String userId, bool isAdmin) async {
+    try {
+      await _supabase
+          .from('users')
+          .update({'is_admin': isAdmin})
+          .eq('id', userId);
+    } catch (e) {
+      throw Exception('Erro ao atualizar função do usuário: $e');
+    }
+  }
+
+  // Atualizar cota de menus do usuário
+  Future<void> updateUserQuota(String userId, int quota) async {
+    try {
+      await _supabase
+          .from('users')
+          .update({'menu_quota': quota})
+          .eq('id', userId);
+    } catch (e) {
+      throw Exception('Erro ao atualizar cota do usuário: $e');
+    }
+  }
   
   // Excluir usuário
   Future<void> deleteUser(String userId) async {
@@ -85,6 +181,18 @@ class AdminService {
       await _supabase.auth.admin.deleteUser(userId);
     } catch (e) {
       throw Exception('Erro ao excluir usuário: $e');
+    }
+  }
+
+  // Excluir menu
+  Future<void> deleteMenu(String menuId) async {
+    try {
+      await _supabase
+          .from('menus')
+          .delete()
+          .eq('id', menuId);
+    } catch (e) {
+      throw Exception('Erro ao excluir menu: $e');
     }
   }
   

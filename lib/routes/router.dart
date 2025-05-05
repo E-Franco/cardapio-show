@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cardapio_app/screens/login_screen.dart';
-import 'package:cardapio_app/screens/register_screen.dart';
-import 'package:cardapio_app/screens/forgot_password_screen.dart';
-import 'package:cardapio_app/screens/reset_password_screen.dart';
-import 'package:cardapio_app/screens/home_screen.dart';
-import 'package:cardapio_app/screens/menu_edit_screen.dart';
-import 'package:cardapio_app/screens/menu_view_screen.dart';
-import 'package:cardapio_app/screens/admin/users_screen.dart';
-import 'package:cardapio_app/screens/admin/menus_screen.dart';
-import 'package:cardapio_app/widgets/layouts/main_layout.dart';
-import 'package:cardapio_app/providers/auth_provider.dart';
+import 'package:cardapio_show/screens/login_screen.dart';
+import 'package:cardapio_show/screens/register_screen.dart';
+import 'package:cardapio_show/screens/forgot_password_screen.dart';
+import 'package:cardapio_show/screens/reset_password_screen.dart';
+import 'package:cardapio_show/screens/home_screen.dart';
+import 'package:cardapio_show/screens/menu_edit_screen.dart';
+import 'package:cardapio_show/screens/menu_view_screen.dart';
+import 'package:cardapio_show/screens/admin/users_screen.dart';
+import 'package:cardapio_show/screens/admin/menus_screen.dart';
+import 'package:cardapio_show/widgets/layouts/main_layout.dart';
+import 'package:cardapio_show/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();

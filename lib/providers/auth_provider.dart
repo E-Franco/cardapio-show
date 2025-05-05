@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cardapio_app/models/user.dart';
-import 'package:cardapio_app/services/cache_service.dart';
-import 'package:cardapio_app/utils/env.dart';
+import 'package:cardapio_show/models/user.dart';
+import 'package:cardapio_show/services/cache_service.dart';
+import 'package:cardapio_show/utils/env.dart';
 
 class AuthProvider extends ChangeNotifier {
   final CacheService _cacheService;
@@ -28,14 +28,14 @@ class AuthProvider extends ChangeNotifier {
     
     try {
       // Verificar se há um usuário em cache
-      final cachedUser = _cacheService.getUser();
+      final User? cachedUser = _cacheService.getUser();
       if (cachedUser != null) {
         _currentUser = cachedUser;
         notifyListeners();
       }
       
       // Verificar sessão atual
-      final session = supabase.auth.currentSession;
+      final Session? session = supabase.auth.currentSession;
       if (session != null) {
         await _fetchUserData(session.user.id);
       }
@@ -47,9 +47,9 @@ class AuthProvider extends ChangeNotifier {
     }
     
     // Configurar listener para mudanças de autenticação
-    supabase.auth.onAuthStateChange.listen((data) {
-      final event = data.event;
-      final session = data.session;
+    supabase.auth.onAuthStateChange.listen((AuthStateChange data) {
+      final AuthChangeEvent event = data.event;
+      final Session? session = data.session;
       
       if (event == AuthChangeEvent.signedIn && session != null) {
         _fetchUserData(session.user.id);
@@ -64,13 +64,13 @@ class AuthProvider extends ChangeNotifier {
   // Buscar dados do usuário
   Future<void> _fetchUserData(String userId) async {
     try {
-      final response = await supabase
+      final Map<String, dynamic> response = await supabase
           .from('users')
           .select()
           .eq('id', userId)
           .single();
       
-      final user = User.fromJson(response);
+      final User user = User.fromJson(response);
       _currentUser = user;
       await _cacheService.saveUser(user);
       notifyListeners();
@@ -80,30 +80,29 @@ class AuthProvider extends ChangeNotifier {
   }
   
   // Login
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<void> signIn(String email, String password) async {
     try {
-      final response = await supabase.auth.signInWithPassword(
+      final AuthResponse response = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
       
       if (response.user != null) {
         await _fetchUserData(response.user!.id);
-        return {'success': true};
       } else {
-        return {'success': false, 'message': 'Credenciais inválidas'};
+        throw Exception('Credenciais inválidas');
       }
     } on AuthException catch (e) {
-      return {'success': false, 'message': e.message};
+      throw Exception(e.message);
     } catch (e) {
-      return {'success': false, 'message': 'Erro ao fazer login'};
+      throw Exception('Erro ao fazer login: $e');
     }
   }
   
   // Cadastro
-  Future<Map<String, dynamic>> register(String name, String email, String password) async {
+  Future<void> register(String name, String email, String password) async {
     try {
-      final response = await supabase.auth.signUp(
+      final AuthResponse response = await supabase.auth.signUp(
         email: email,
         password: password,
       );
@@ -119,14 +118,13 @@ class AuthProvider extends ChangeNotifier {
         });
         
         await _fetchUserData(response.user!.id);
-        return {'success': true};
       } else {
-        return {'success': false, 'message': 'Erro ao criar conta'};
+        throw Exception('Erro ao criar conta');
       }
     } on AuthException catch (e) {
-      return {'success': false, 'message': e.message};
+      throw Exception(e.message);
     } catch (e) {
-      return {'success': false, 'message': 'Erro ao criar conta'};
+      throw Exception('Erro ao criar conta: $e');
     }
   }
   
@@ -139,28 +137,39 @@ class AuthProvider extends ChangeNotifier {
   }
   
   // Recuperação de senha
-  Future<Map<String, dynamic>> resetPassword(String email) async {
+  Future<void> resetPassword(String email) async {
     try {
       await supabase.auth.resetPasswordForEmail(email);
-      return {'success': true};
     } on AuthException catch (e) {
-      return {'success': false, 'message': e.message};
+      throw Exception(e.message);
     } catch (e) {
-      return {'success': false, 'message': 'Erro ao enviar email de recuperação'};
+      throw Exception('Erro ao enviar email de recuperação: $e');
+    }
+  }
+  
+  // Confirmar redefinição de senha
+  Future<void> confirmPasswordReset(String token, String newPassword) async {
+    try {
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } on AuthException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('Erro ao atualizar senha: $e');
     }
   }
   
   // Atualizar senha
-  Future<Map<String, dynamic>> updatePassword(String password) async {
+  Future<void> updatePassword(String password) async {
     try {
       await supabase.auth.updateUser(
         UserAttributes(password: password),
       );
-      return {'success': true};
     } on AuthException catch (e) {
-      return {'success': false, 'message': e.message};
+      throw Exception(e.message);
     } catch (e) {
-      return {'success': false, 'message': 'Erro ao atualizar senha'};
+      throw Exception('Erro ao atualizar senha: $e');
     }
   }
 }

@@ -18,7 +18,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _menuService = MenuService();
+  final MenuService _menuService = MenuService();
   List<Menu> _menus = [];
   bool _isLoading = true;
 
@@ -29,8 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadMenus() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final User? user = authProvider.currentUser;
 
     if (user == null) {
       setState(() {
@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (user.isAdmin) {
         // Administradores podem ver todos os menus
-        final result = await _menuService.getAllMenus(limit: 100);
+        final Map<String, dynamic> result = await _menuService.getAllMenus(limit: 100);
         userMenus = result['menus'] as List<Menu>;
       } else {
         // Usuários comuns veem apenas seus próprios menus
@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   bool _canCreateMenu() {
-    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final User? user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user == null) return false;
     if (user.isAdmin) return true;
 
@@ -106,9 +106,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleDeleteMenu(Menu menu) async {
-    final confirmed = await showDialog<bool>(
+    final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => ConfirmDialog(
+      builder: (BuildContext context) => ConfirmDialog(
         title: 'Excluir cardápio',
         message: 'Tem certeza que deseja excluir o cardápio "${menu.name}"? Esta ação é irreversível e não poderá ser desfeita.',
         confirmText: 'Excluir',
@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Atualizar a lista de menus
       setState(() {
-        _menus = _menus.where((m) => m.id != menu.id).toList();
+        _menus = _menus.where((Menu m) => m.id != menu.id).toList();
       });
 
       if (!mounted) return;
@@ -153,11 +153,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    final AuthProvider authProvider = Provider.of<AuthProvider>(context);
+    final User? user = authProvider.currentUser;
 
     // Calcular a porcentagem de uso da cota
-    final quotaPercentage = user != null && !user.isAdmin
+    final double quotaPercentage = user != null && !user.isAdmin
         ? (_menus.length / user.menuQuota) * 100
         : 100.0;
 
@@ -378,8 +378,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisExtent: 280,
                           ),
                           delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final menu = _menus[index];
+                            (BuildContext context, int index) {
+                              final Menu menu = _menus[index];
                               return MenuCard(
                                 menu: menu,
                                 onDelete: () => _handleDeleteMenu(menu),

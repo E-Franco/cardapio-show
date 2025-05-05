@@ -1,5 +1,6 @@
 import 'package:cardapio_app/models/product.dart';
 import 'package:cardapio_app/models/social_media.dart';
+import 'package:flutter/material.dart';
 
 class Menu {
   final String id;
@@ -123,5 +124,59 @@ class Menu {
       products: products ?? this.products,
       socialMedia: socialMedia ?? this.socialMedia,
     );
+  }
+
+  // Converte a string de cor hexadecimal para um objeto Color
+  Color getBannerColor() {
+    if (bannerColor == null) {
+      return Colors.grey.shade800; // Cor padrão
+    }
+    try {
+      return _hexToColor(bannerColor!);
+    } catch (e) {
+      return Colors.grey.shade800; // Cor padrão em caso de erro
+    }
+  }
+
+  // Converte a string de cor hexadecimal para um objeto Color
+  Color? getBackgroundColor() {
+    if (backgroundColor == null) return null;
+    try {
+      return _hexToColor(backgroundColor!);
+    } catch (e) {
+      return Colors.white; // Cor padrão em caso de erro
+    }
+  }
+
+  // Converte a string de cor hexadecimal para um objeto Color
+  Color? getTextColor() {
+    if (textColor == null) return null;
+    try {
+      return _hexToColor(textColor!);
+    } catch (e) {
+      return Colors.black; // Cor padrão em caso de erro
+    }
+  }
+
+  // Converte a string de cor hexadecimal para um objeto Color
+  Color? getBodyBackgroundColor() {
+    if (bodyBackgroundColor == null) return null;
+    try {
+      return _hexToColor(bodyBackgroundColor!);
+    } catch (e) {
+      return Colors.white; // Cor padrão em caso de erro
+    }
+  }
+
+  // Método auxiliar para converter string hexadecimal para Color
+  Color _hexToColor(String hexString) {
+    final hexCode = hexString.replaceAll('#', '');
+    if (hexCode.length == 6) {
+      return Color(int.parse('FF$hexCode', radix: 16));
+    } else if (hexCode.length == 8) {
+      return Color(int.parse(hexCode, radix: 16));
+    } else {
+      throw FormatException('Formato de cor inválido: $hexString');
+    }
   }
 }

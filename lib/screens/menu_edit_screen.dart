@@ -237,11 +237,6 @@ class _MenuEditScreenState extends State<MenuEditScreen> with SingleTickerProvid
       final updatedMenu = _menu!.copyWith(
         categories: updatedCategories,
       );
-        ?? [];
-      
-      final updatedMenu = _menu!.copyWith(
-        categories: updatedCategories,
-      );
       
       await MenuService().updateMenu(updatedMenu);
       
