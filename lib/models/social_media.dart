@@ -4,6 +4,8 @@ class SocialMedia {
   final String? instagram;
   final String? facebook;
   final String? twitter;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   SocialMedia({
     required this.id,
@@ -11,25 +13,31 @@ class SocialMedia {
     this.instagram,
     this.facebook,
     this.twitter,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory SocialMedia.fromJson(Map<String, dynamic> json) {
     return SocialMedia(
-      id: json['id'] ?? '',
-      menuId: json['menuId'] ?? '',
-      instagram: json['instagram'],
-      facebook: json['facebook'],
-      twitter: json['twitter'],
+      id: json['id'] as String,
+      menuId: json['menu_id'] as String,
+      instagram: json['instagram'] as String?,
+      facebook: json['facebook'] as String?,
+      twitter: json['twitter'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'menuId': menuId,
+      'menu_id': menuId,
       'instagram': instagram,
       'facebook': facebook,
       'twitter': twitter,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -39,6 +47,8 @@ class SocialMedia {
     String? instagram,
     String? facebook,
     String? twitter,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return SocialMedia(
       id: id ?? this.id,
@@ -46,6 +56,8 @@ class SocialMedia {
       instagram: instagram ?? this.instagram,
       facebook: facebook ?? this.facebook,
       twitter: twitter ?? this.twitter,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -57,7 +69,9 @@ class SocialMedia {
         other.menuId == menuId &&
         other.instagram == instagram &&
         other.facebook == facebook &&
-        other.twitter == twitter;
+        other.twitter == twitter &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
   }
 
   @override
@@ -66,5 +80,7 @@ class SocialMedia {
       menuId.hashCode ^
       instagram.hashCode ^
       facebook.hashCode ^
-      twitter.hashCode;
+      twitter.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
 }

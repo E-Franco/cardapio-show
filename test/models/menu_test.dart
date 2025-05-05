@@ -1,144 +1,114 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cardapio_show/models/menu.dart';
-import 'package:cardapio_show/models/category.dart';
-import 'package:cardapio_show/models/product.dart';
+import 'package:cardapio_app/models/menu.dart';
+import 'package:cardapio_app/models/product.dart';
+import 'package:cardapio_app/models/social_media.dart';
 
 void main() {
   group('Menu Model', () {
-    test('should create a Menu instance from JSON', () {
+    final now = DateTime.now();
+    final nowString = now.toIso8601String();
+    
+    test('should create a Menu from JSON', () {
       // Arrange
-      final Map<String, dynamic> json = {
-        'id': 'menu123',
+      final json = {
+        'id': '123',
         'name': 'Test Menu',
-        'userId': 'user123',
-        'bannerImageUrl': 'https://example.com/banner.jpg',
-        'bannerColor': 0xFF123456,
-        'bodyColor': 0xFFFFFFFF,
-        'textColor': 0xFF000000,
-        'displayNameOption': 'banner',
-        'fontFamily': 'Roboto',
-        'createdAt': '2023-01-01T12:00:00.000Z',
-        'categories': [
-          {
-            'id': 'cat1',
-            'name': 'Category 1',
-          }
-        ],
-        'products': [
-          {
-            'id': 'prod1',
-            'name': 'Product 1',
-            'price': 10.99,
-            'description': 'Description 1',
-            'imageUrl': 'https://example.com/product1.jpg',
-            'menuId': 'menu123',
-            'categoryId': 'cat1',
-            'orderIndex': 0,
-            'type': 'product',
-          }
-        ],
-        'userEmail': 'user@example.com',
-        'userName': 'User Name',
+        'owner_id': 'user123',
+        'owner_name': 'Test User',
+        'banner_image': 'https://example.com/image.jpg',
+        'banner_color': '#FF0000',
+        'banner_link': 'https://example.com',
+        'show_link_button': true,
+        'background_color': '#FFFFFF',
+        'text_color': '#000000',
+        'title_position': 'center',
+        'font_family': 'Roboto',
+        'body_background_color': '#F5F5F5',
+        'created_at': nowString,
+        'updated_at': nowString,
       };
-
+      
       // Act
       final menu = Menu.fromJson(json);
-
+      
       // Assert
-      expect(menu.id, 'menu123');
+      expect(menu.id, '123');
       expect(menu.name, 'Test Menu');
-      expect(menu.userId, 'user123');
-      expect(menu.bannerImageUrl, 'https://example.com/banner.jpg');
-      expect(menu.bannerColor, 0xFF123456);
-      expect(menu.bodyColor, 0xFFFFFFFF);
-      expect(menu.textColor, 0xFF000000);
-      expect(menu.displayNameOption, 'banner');
+      expect(menu.ownerId, 'user123');
+      expect(menu.ownerName, 'Test User');
+      expect(menu.bannerImage, 'https://example.com/image.jpg');
+      expect(menu.bannerColor, '#FF0000');
+      expect(menu.bannerLink, 'https://example.com');
+      expect(menu.showLinkButton, true);
+      expect(menu.backgroundColor, '#FFFFFF');
+      expect(menu.textColor, '#000000');
+      expect(menu.titlePosition, 'center');
       expect(menu.fontFamily, 'Roboto');
-      expect(menu.createdAt, DateTime.parse('2023-01-01T12:00:00.000Z'));
-      expect(menu.categories!.length, 1);
-      expect(menu.categories![0].id, 'cat1');
-      expect(menu.products!.length, 1);
-      expect(menu.products![0].id, 'prod1');
-      expect(menu.userEmail, 'user@example.com');
-      expect(menu.userName, 'User Name');
+      expect(menu.bodyBackgroundColor, '#F5F5F5');
+      expect(menu.createdAt.toIso8601String(), nowString);
+      expect(menu.updatedAt.toIso8601String(), nowString);
     });
-
-    test('should convert Menu instance to JSON', () {
+    
+    test('should convert Menu to JSON', () {
       // Arrange
       final menu = Menu(
-        id: 'menu123',
+        id: '123',
         name: 'Test Menu',
-        userId: 'user123',
-        bannerImageUrl: 'https://example.com/banner.jpg',
-        bannerColor: 0xFF123456,
-        bodyColor: 0xFFFFFFFF,
-        textColor: 0xFF000000,
-        displayNameOption: 'banner',
+        ownerId: 'user123',
+        bannerImage: 'https://example.com/image.jpg',
+        bannerColor: '#FF0000',
+        bannerLink: 'https://example.com',
+        showLinkButton: true,
+        backgroundColor: '#FFFFFF',
+        textColor: '#000000',
+        titlePosition: 'center',
         fontFamily: 'Roboto',
-        createdAt: DateTime.parse('2023-01-01T12:00:00.000Z'),
-        categories: [
-          Category(
-            id: 'cat1',
-            name: 'Category 1',
-          )
-        ],
-        products: [
-          Product(
-            id: 'prod1',
-            name: 'Product 1',
-            price: 10.99,
-            description: 'Description 1',
-            imageUrl: 'https://example.com/product1.jpg',
-            menuId: 'menu123',
-            categoryId: 'cat1',
-            orderIndex: 0,
-            type: ProductType.product,
-          )
-        ],
-        userEmail: 'user@example.com',
-        userName: 'User Name',
+        bodyBackgroundColor: '#F5F5F5',
+        createdAt: now,
+        updatedAt: now,
       );
-
+      
       // Act
       final json = menu.toJson();
-
+      
       // Assert
-      expect(json['id'], 'menu123');
+      expect(json['id'], '123');
       expect(json['name'], 'Test Menu');
-      expect(json['userId'], 'user123');
-      expect(json['bannerImageUrl'], 'https://example.com/banner.jpg');
-      expect(json['bannerColor'], 0xFF123456);
-      expect(json['bodyColor'], 0xFFFFFFFF);
-      expect(json['textColor'], 0xFF000000);
-      expect(json['displayNameOption'], 'banner');
-      expect(json['fontFamily'], 'Roboto');
-      expect(json['createdAt'], menu.createdAt.toIso8601String());
-      expect(json['categories'].length, 1);
-      expect(json['products'].length, 1);
+      expect(json['owner_id'], 'user123');
+      expect(json['banner_image'], 'https://example.com/image.jpg');
+      expect(json['banner_color'], '#FF0000');
+      expect(json['banner_link'], 'https://example.com');
+      expect(json['show_link_button'], true);
+      expect(json['background_color'], '#FFFFFF');
+      expect(json['text_color'], '#000000');
+      expect(json['title_position'], 'center');
+      expect(json['font_family'], 'Roboto');
+      expect(json['body_background_color'], '#F5F5F5');
+      expect(json['created_at'], nowString);
+      expect(json['updated_at'], nowString);
     });
-
-    test('should create a copy with updated values', () {
+    
+    test('should create a copy with updated fields', () {
       // Arrange
       final menu = Menu(
-        id: 'menu123',
+        id: '123',
         name: 'Test Menu',
-        userId: 'user123',
-        createdAt: DateTime.now(),
+        ownerId: 'user123',
+        createdAt: now,
+        updatedAt: now,
       );
-
+      
       // Act
       final updatedMenu = menu.copyWith(
-        name: 'Updated Menu',
-        bannerColor: 0xFF654321,
-        fontFamily: 'Lato',
+        name: 'New Menu Name',
+        bannerColor: '#00FF00',
       );
-
+      
       // Assert
-      expect(updatedMenu.id, 'menu123');
-      expect(updatedMenu.name, 'Updated Menu');
-      expect(updatedMenu.userId, 'user123');
-      expect(updatedMenu.bannerColor, 0xFF654321);
-      expect(updatedMenu.fontFamily, 'Lato');
+      expect(updatedMenu.id, '123'); // Unchanged
+      expect(updatedMenu.name, 'New Menu Name'); // Changed
+      expect(updatedMenu.ownerId, 'user123'); // Unchanged
+      expect(updatedMenu.bannerColor, '#00FF00'); // Changed
     });
   });
 }

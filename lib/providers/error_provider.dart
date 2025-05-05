@@ -4,70 +4,121 @@ enum ErrorSeverity {
   info,
   warning,
   error,
-}
-
-class ErrorAction {
-  final String label;
-  final VoidCallback onPressed;
-
-  ErrorAction({
-    required this.label,
-    required this.onPressed,
-  });
-}
-
-class ErrorData {
-  final String title;
-  final String message;
-  final ErrorSeverity severity;
-  final ErrorAction? action;
-  final DateTime timestamp;
-
-  ErrorData({
-    required this.title,
-    required this.message,
-    this.severity = ErrorSeverity.error,
-    this.action,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  success,
 }
 
 class ErrorProvider extends ChangeNotifier {
-  ErrorData? _currentError;
-  final List<ErrorData> _errorHistory = [];
-
-  ErrorData? get currentError => _currentError;
-  List<ErrorData> get errorHistory => List.unmodifiable(_errorHistory);
-
-  void captureError(dynamic error, {
+  String? _errorMessage;
+  String? _errorTitle;
+  ErrorSeverity _severity = ErrorSeverity.error;
+  bool _isVisible = false;
+  Function? _retryAction;
+  
+  // Getters
+  String? get errorMessage => _errorMessage;
+  String? get errorTitle => _errorTitle;
+  ErrorSeverity get severity => _severity;
+  bool get isVisible => _isVisible;
+  Function? get retryAction => _retryAction;
+  
+  // Mostrar erro
+  void showError({
+    required String message,
     String? title,
-    String? description,
     ErrorSeverity severity = ErrorSeverity.error,
-    ErrorAction? action,
+    Function? retryAction,
   }) {
-    final errorMessage = error is Exception || error is Error
-        ? error.toString()
-        : error?.toString() ?? 'Erro desconhecido';
-
-    final errorData = ErrorData(
-      title: title ?? 'Erro',
-      message: description ?? errorMessage,
-      severity: severity,
-      action: action,
+    _errorMessage = message;
+    _errorTitle = title ?? _getTitleForSeverity(severity);
+    _severity = severity;
+    _retryAction = retryAction;
+    _isVisible = true;
+    notifyListeners();
+  }
+  
+  // Mostrar mensagem de sucesso
+  void showSuccess({
+    required String message,
+    String? title,
+  }) {
+    showError(
+      message: message,
+      title: title ?? 'Sucesso',
+      severity: ErrorSeverity.success,
     );
-
-    _currentError = errorData;
-    _errorHistory.add(errorData);
+  }
+  
+  // Mostrar mensagem de informação
+  void showInfo({
+    required String message,
+    String? title,
+  }) {
+    showError(
+      message: message,
+      title: title ?? 'Informação',
+      severity: ErrorSeverity.info,
+    );
+  }
+  
+  // Mostrar aviso
+  void showWarning({
+    required String message,
+    String? title,
+    Function? retryAction,
+  }) {
+    showError(
+      message: message,
+      title: title ?? 'Atenção',
+      severity: ErrorSeverity.warning,
+      retryAction: retryAction,
+    );
+  }
+  
+  // Esconder erro
+  void hideError() {
+    _isVisible = false;
     notifyListeners();
   }
-
-  void clearCurrentError() {
-    _currentError = null;
-    notifyListeners();
+  
+  // Obter título com base na severidade
+  String _getTitleForSeverity(ErrorSeverity severity) {
+    switch (severity) {
+      case ErrorSeverity.info:
+        return 'Informação';
+      case ErrorSeverity.warning:
+        return 'Atenção';
+      case ErrorSeverity.error:
+        return 'Erro';
+      case ErrorSeverity.success:
+        return 'Sucesso';
+    }
   }
-
-  void clearErrorHistory() {
-    _errorHistory.clear();
-    notifyListeners();
+  
+  // Obter cor com base na severidade
+  Color getColorForSeverity(ErrorSeverity severity) {
+    switch (severity) {
+      case ErrorSeverity.info:
+        return Colors.blue;
+      case ErrorSeverity.warning:
+        return Colors.orange;
+      case ErrorSeverity.error:
+        return Colors.red;
+      case ErrorSeverity.success:
+        return Colors.green;
+    }
+  }
+  
+  // Obter ícone com base na severidade
+  IconData getIconForSeverity(ErrorSeverity severity) {
+    switch (severity) {
+      case ErrorSeverity.info:
+        return Icons.info_outline;
+      case ErrorSeverity.warning:
+        return Icons.warning_amber_outlined;
+      case ErrorSeverity.error:
+        return Icons.error_outline;
+      case ErrorSeverity.success:
+        return Icons.check_circle_outline;
+    }
   }
 }

@@ -1,33 +1,33 @@
 class User {
   final String id;
-  final String email;
   final String name;
+  final String email;
   final bool isAdmin;
   final int menuQuota;
 
   User({
     required this.id,
-    required this.email,
     required this.name,
-    this.isAdmin = false,
-    this.menuQuota = 3,
+    required this.email,
+    required this.isAdmin,
+    required this.menuQuota,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? '',
-      isAdmin: json['is_admin'] ?? false,
-      menuQuota: json['menu_quota'] ?? 3,
+      id: json['id'] as String,
+      name: json['name'] as String,
+      email: json['email'] as String,
+      isAdmin: json['is_admin'] as bool,
+      menuQuota: json['menu_quota'] as int,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'email': email,
       'name': name,
+      'email': email,
       'is_admin': isAdmin,
       'menu_quota': menuQuota,
     };
@@ -35,15 +35,15 @@ class User {
 
   User copyWith({
     String? id,
-    String? email,
     String? name,
+    String? email,
     bool? isAdmin,
     int? menuQuota,
   }) {
     return User(
       id: id ?? this.id,
-      email: email ?? this.email,
       name: name ?? this.name,
+      email: email ?? this.email,
       isAdmin: isAdmin ?? this.isAdmin,
       menuQuota: menuQuota ?? this.menuQuota,
     );

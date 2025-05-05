@@ -1,75 +1,165 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cardapio_show/models/menu.dart';
-import 'package:cardapio_show/models/product.dart';
-import 'package:cardapio_show/models/social_media.dart';
-import 'package:cardapio_show/services/cache_service.dart';
-import 'package:uuid/uuid.dart';
+import 'package:cardapio_app/models/menu.dart';
+import 'package:cardapio_app/models/product.dart';
+import 'package:cardapio_app/models/social_media.dart';
+import 'package:cardapio_app/services/cache_service.dart';
+import 'package:cardapio_app/utils/env.dart';
 
 class MenuService {
-  final _supabase = Supabase.instance.client;
-  final _uuid = const Uuid();
-  final _cacheService = CacheService();
-
-  // Criar um novo cardápio
-  Future<Menu> createMenu(Menu menu) async {
+  final SupabaseClient _supabase;
+  final CacheService _cacheService;
+  
+  MenuService(this._supabase, this._cacheService);
+  
+  // Obter todos os menus do usuário
+  Future<List<Menu>> getUserMenus() async {
     try {
-      final menuId = _uuid.v4();
-      final newMenu = menu.copyWith(
-        id: menuId,
-        createdAt: DateTime.now(),
-      );
-
+      // Verificar cache primeiro
+      final cachedMenus = _cacheService.getMenus();
+      if (cachedMenus != null) {
+        return cachedMenus;
+      }
+      
+      // Buscar do servidor
       final response = await _supabase
           .from('menus')
-          .insert(newMenu.toJson())
-          .select()
-          .single();
-
-      final createdMenu = Menu.fromJson(response);
+          .select('*, users:owner_id(name)')
+          .order('created_at', ascending: false);
       
-      // Atualizar cache
-      final cachedMenus = await _cacheService.getCachedUserMenus() ?? [];
-      cachedMenus.insert(0, createdMenu);
-      await _cacheService.cacheUserMenus(cachedMenus);
+      final List<Menu> menus = (response as List).map((data) {
+        // Converter o formato do Supabase para o nosso modelo
+        final menuData = {
+          ...data,
+          'owner_name': data['users']['name'],
+        };
+        return Menu.fromJson(menuData);
+      }).toList();
       
-      return createdMenu;
+      // Salvar no cache
+      await _cacheService.saveMenus(menus);
+      
+      return menus;
     } catch (e) {
-      debugPrint('Erro ao criar cardápio: $e');
-      rethrow;
+      throw Exception('Erro ao buscar menus: $e');
     }
   }
-
-  // Obter um cardápio pelo ID
-  Future<Menu> getMenu(String id) async {
+  
+  // Obter um menu específico
+  Future<Menu> getMenu(String menuId) async {
     try {
-      // Tentar obter do cache primeiro
-      final cachedMenu = await _cacheService.getCachedMenuDetails(id);
-      
+      // Verificar cache primeiro
+      final cachedMenu = _cacheService.getMenuDetails(menuId);
       if (cachedMenu != null) {
         return cachedMenu;
       }
       
-      // Se não estiver em cache, buscar da API
+      // Buscar do servidor
       final response = await _supabase
           .from('menus')
-          .select()
-          .eq('id', id)
+          .select('*, users:owner_id(name)')
+          .eq('id', menuId)
           .single();
-
-      final menu = Menu.fromJson(response);
       
-      // Salvar em cache
-      await _cacheService.cacheMenuDetails(menu);
+      // Converter o formato do Supabase para o nosso modelo
+      final menuData = {
+        ...response,
+        'owner_name': response['users']['name'],
+      };
+      
+      final menu = Menu.fromJson(menuData);
+      
+      // Salvar no cache
+      await _cacheService.saveMenuDetails(menu);
       
       return menu;
     } catch (e) {
-      debugPrint('Erro ao obter cardápio: $e');
-      rethrow;
+      throw Exception('Erro ao buscar menu: $e');
     }
   }
-
-  // Atualizar um cardápio
+  
+  // Obter produtos de um menu
+  Future<List<Product>> getMenuProducts(String menuId) async {
+    try {
+      // Verificar cache primeiro
+      final cachedProducts = _cacheService.getMenuProducts(menuId);
+      if (cachedProducts != null) {
+        return cachedProducts.map((data) => Product.fromJson(data)).toList();
+      }
+      
+      // Buscar do servidor
+      final response = await _supabase
+          .from('products')
+          .select('*, categories:category_id(name)')
+          .eq('menu_id', menuId)
+          .order('order', ascending: true);
+      
+      final List<Product> products = (response as List).map((data) {
+        // Converter o formato do Supabase para o nosso modelo
+        final productData = {
+          ...data,
+          'category_name': data['categories'] != null ? data['categories']['name'] : null,
+        };
+        return Product.fromJson(productData);
+      }).toList();
+      
+      // Salvar no cache
+      await _cacheService.saveMenuProducts(menuId, response);
+      
+      return products;
+    } catch (e) {
+      throw Exception('Erro ao buscar produtos: $e');
+    }
+  }
+  
+  // Obter redes sociais de um menu  {
+      throw Exception('Erro ao buscar produtos: $e');
+    }
+  }
+  
+  // Obter redes sociais de um menu
+  Future<SocialMedia?> getMenuSocialMedia(String menuId) async {
+    try {
+      // Buscar do servidor
+      final response = await _supabase
+          .from('social_media')
+          .select('*')
+          .eq('menu_id', menuId)
+          .maybeSingle();
+      
+      if (response == null) return null;
+      
+      return SocialMedia.fromJson(response);
+    } catch (e) {
+      throw Exception('Erro ao buscar redes sociais: $e');
+    }
+  }
+  
+  // Criar um novo menu
+  Future<Menu> createMenu(Menu menu) async {
+    try {
+      final response = await _supabase
+          .from('menus')
+          .insert(menu.toJson())
+          .select()
+          .single();
+      
+      final newMenu = Menu.fromJson(response);
+      
+      // Atualizar cache
+      final cachedMenus = _cacheService.getMenus();
+      if (cachedMenus != null) {
+        await _cacheService.saveMenus([newMenu, ...cachedMenus]);
+      }
+      
+      return newMenu;
+    } catch (e) {
+      throw Exception('Erro ao criar menu: $e');
+    }
+  }
+  
+  // Atualizar um menu existente
   Future<Menu> updateMenu(Menu menu) async {
     try {
       final response = await _supabase
@@ -78,144 +168,46 @@ class MenuService {
           .eq('id', menu.id)
           .select()
           .single();
-
+      
       final updatedMenu = Menu.fromJson(response);
       
       // Atualizar cache
-      await _cacheService.cacheMenuDetails(updatedMenu);
+      await _cacheService.saveMenuDetails(updatedMenu);
       
-      // Atualizar lista de cardápios em cache
-      final cachedMenus = await _cacheService.getCachedUserMenus();
+      // Atualizar lista de menus no cache
+      final cachedMenus = _cacheService.getMenus();
       if (cachedMenus != null) {
-        final index = cachedMenus.indexWhere((m) => m.id == menu.id);
-        if (index != -1) {
-          cachedMenus[index] = updatedMenu;
-          await _cacheService.cacheUserMenus(cachedMenus);
-        }
+        final updatedMenus = cachedMenus.map((m) => 
+          m.id == menu.id ? updatedMenu : m
+        ).toList();
+        await _cacheService.saveMenus(updatedMenus);
       }
       
       return updatedMenu;
     } catch (e) {
-      debugPrint('Erro ao atualizar cardápio: $e');
-      rethrow;
+      throw Exception('Erro ao atualizar menu: $e');
     }
   }
-
-  // Excluir um cardápio
-  Future<void> deleteMenu(String id) async {
+  
+  // Excluir um menu
+  Future<void> deleteMenu(String menuId) async {
     try {
       await _supabase
           .from('menus')
           .delete()
-          .eq('id', id);
+          .eq('id', menuId);
       
       // Atualizar cache
-      final cachedMenus = await _cacheService.getCachedUserMenus();
+      final cachedMenus = _cacheService.getMenus();
       if (cachedMenus != null) {
-        cachedMenus.removeWhere((menu) => menu.id == id);
-        await _cacheService.cacheUserMenus(cachedMenus);
-      }
-    } catch (e) {
-      debugPrint('Erro ao excluir cardápio: $e');
-      rethrow;
-    }
-  }
-
-  // Obter todos os cardápios de um usuário
-  Future<List<Menu>> getUserMenus(String userId) async {
-    try {
-      // Tentar obter do cache primeiro
-      final cachedMenus = await _cacheService.getCachedUserMenus();
-      
-      // Buscar da API
-      final response = await _supabase
-          .from('menus')
-          .select()
-          .eq('userId', userId)
-          .order('createdAt', ascending: false);
-
-      final menus = (response as List).map((item) => Menu.fromJson(item)).toList();
-      
-      // Salvar em cache
-      await _cacheService.cacheUserMenus(menus);
-      
-      return menus;
-    } catch (e) {
-      debugPrint('Erro ao obter cardápios do usuário: $e');
-      
-      // Em caso de erro, tentar usar o cache
-      final cachedMenus = await _cacheService.getCachedUserMenus();
-      if (cachedMenus != null) {
-        return cachedMenus;
+        final updatedMenus = cachedMenus.where((m) => m.id != menuId).toList();
+        await _cacheService.saveMenus(updatedMenus);
       }
       
-      rethrow;
-    }
-  }
-
-  // Adicionar um produto ao cardápio
-  Future<Product> addProduct(Product product) async {
-    try {
-      final productId = _uuid.v4();
-      final newProduct = product.copyWith(
-        id: productId,
-      );
-
-      final response = await _supabase
-          .from('products')
-          .insert(newProduct.toJson())
-          .select()
-          .single();
-
-      final createdProduct = Product.fromJson(response);
-      
-      // Atualizar cache de produtos
-      final cachedProducts = await _cacheService.getCachedMenuProducts(product.menuId) ?? [];
-      cachedProducts.add(createdProduct);
-      await _cacheService.cacheMenuProducts(product.menuId, cachedProducts);
-      
-      return createdProduct;
+      // Remover detalhes do menu do cache
+      await _cacheService.clearCache();
     } catch (e) {
-      debugPrint('Erro ao adicionar produto: $e');
-      rethrow;
+      throw Exception('Erro ao excluir menu: $e');
     }
   }
-
-  // Obter todos os produtos de um cardápio
-  Future<List<Product>> getMenuProducts(String menuId) async {
-    try {
-      // Tentar obter do cache primeiro
-      final cachedProducts = await _cacheService.getCachedMenuProducts(menuId);
-      
-      if (cachedProducts != null) {
-        return cachedProducts;
-      }
-      
-      // Se não estiver em cache, buscar da API
-      final response = await _supabase
-          .from('products')
-          .select()
-          .eq('menuId', menuId)
-          .order('orderIndex', ascending: true);
-
-      final products = (response as List).map((item) => Product.fromJson(item)).toList();
-      
-      // Salvar em cache
-      await _cacheService.cacheMenuProducts(menuId, products);
-      
-      return products;
-    } catch (e) {
-      debugPrint('Erro ao obter produtos do cardápio: $e');
-      
-      // Em caso de erro, tentar usar o cache
-      final cachedProducts = await _cacheService.getCachedMenuProducts(menuId);
-      if (cachedProducts != null) {
-        return cachedProducts;
-      }
-      
-      rethrow;
-    }
-  }
-
-  // Resto dos métodos permanecem iguais...
 }

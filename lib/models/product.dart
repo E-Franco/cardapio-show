@@ -1,109 +1,92 @@
-enum ProductType { product, image }
-
 class Product {
   final String id;
-  final String name;
-  final double price;
-  final String? description;
-  final String? imageUrl;
   final String menuId;
-  final String categoryId;
-  final int orderIndex;
-  final ProductType type;
+  final String name;
+  final String? description;
+  final double price;
+  final String? image;
+  final bool isAvailable;
+  final String? categoryId;
+  final String? categoryName;
+  final int order;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Product({
     required this.id,
-    required this.name,
-    this.price = 0.0,
-    this.description,
-    this.imageUrl,
     required this.menuId,
-    required this.categoryId,
-    required this.orderIndex,
-    this.type = ProductType.product,
+    required this.name,
+    this.description,
+    required this.price,
+    this.image,
+    this.isAvailable = true,
+    this.categoryId,
+    this.categoryName,
+    required this.order,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      price: json['price']?.toDouble() ?? 0.0,
-      description: json['description'],
-      imageUrl: json['imageUrl'],
-      menuId: json['menuId'] ?? '',
-      categoryId: json['categoryId'] ?? '',
-      orderIndex: json['orderIndex'] ?? 0,
-      type: _parseProductType(json['type']),
+      id: json['id'] as String,
+      menuId: json['menu_id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      price: (json['price'] as num).toDouble(),
+      image: json['image'] as String?,
+      isAvailable: json['is_available'] as bool? ?? true,
+      categoryId: json['category_id'] as String?,
+      categoryName: json['category_name'] as String?,
+      order: json['order'] as int? ?? 0,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
-  }
-
-  static ProductType _parseProductType(String? type) {
-    if (type == 'image') return ProductType.image;
-    return ProductType.product;
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'menu_id': menuId,
       'name': name,
-      'price': price,
       'description': description,
-      'imageUrl': imageUrl,
-      'menuId': menuId,
-      'categoryId': categoryId,
-      'orderIndex': orderIndex,
-      'type': type == ProductType.image ? 'image' : 'product',
+      'price': price,
+      'image': image,
+      'is_available': isAvailable,
+      'category_id': categoryId,
+      'order': order,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
   Product copyWith({
     String? id,
-    String? name,
-    double? price,
-    String? description,
-    String? imageUrl,
     String? menuId,
+    String? name,
+    String? description,
+    double? price,
+    String? image,
+    bool? isAvailable,
     String? categoryId,
-    int? orderIndex,
-    ProductType? type,
+    String? categoryName,
+    int? order,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Product(
       id: id ?? this.id,
-      name: name ?? this.name,
-      price: price ?? this.price,
-      description: description ?? this.description,
-      imageUrl: imageUrl ?? this.imageUrl,
       menuId: menuId ?? this.menuId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      image: image ?? this.image,
+      isAvailable: isAvailable ?? this.isAvailable,
       categoryId: categoryId ?? this.categoryId,
-      orderIndex: orderIndex ?? this.orderIndex,
-      type: type ?? this.type,
+      categoryName: categoryName ?? this.categoryName,
+      order: order ?? this.order,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Product &&
-        other.id == id &&
-        other.name == name &&
-        other.price == price &&
-        other.description == description &&
-        other.imageUrl == imageUrl &&
-        other.menuId == menuId &&
-        other.categoryId == categoryId &&
-        other.orderIndex == orderIndex &&
-        other.type == type;
-  }
-
-  @override
-  int get hashCode =>
-      id.hashCode ^
-      name.hashCode ^
-      price.hashCode ^
-      description.hashCode ^
-      imageUrl.hashCode ^
-      menuId.hashCode ^
-      categoryId.hashCode ^
-      orderIndex.hashCode ^
-      type.hashCode;
 }

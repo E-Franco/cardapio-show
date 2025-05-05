@@ -1,5 +1,5 @@
-name: cardapio_show
-description: Aplicativo para criação e gerenciamento de cardápios digitais.
+name: cardapio_app
+description: Aplicativo para gerenciamento de cardápios digitais.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,29 +9,37 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.5
   supabase_flutter: ^1.10.25
   go_router: ^12.1.1
   provider: ^6.1.1
   shared_preferences: ^2.2.2
-  uuid: ^4.2.1
-  image_picker: ^1.0.4
-  cached_network_image: ^3.3.0
-  flutter_colorpicker: ^1.0.3
-  qr_flutter: ^4.1.0
-  url_launcher: ^6.2.1
-  share_plus: ^7.2.1
   flutter_dotenv: ^5.1.0
-  intl: ^0.18.1
+  cached_network_image: ^3.3.0
+  flutter_cache_manager: ^3.3.1
   path_provider: ^2.1.1
-  flutter_svg: ^2.0.9
-  flutter_markdown: ^0.6.18
+  uuid: ^4.2.1
+  image: ^4.1.3
+  intl: ^0.18.1
+  url_launcher: ^6.2.1
+  qr_flutter: ^4.1.0
+  path: ^1.8.3
   http: ^1.1.0
+  flutter_colorpicker: ^1.0.3
+  pdf: ^3.10.4
+  printing: ^5.11.0
+  share_plus: ^7.2.1
+  flutter_svg: ^2.0.9
+  connectivity_plus: ^5.0.1
+  flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^3.0.1
+  mockito: ^5.4.2
+  build_runner: ^2.4.6
+  network_image_mock: ^2.1.1
 
 flutter:
   uses-material-design: true
@@ -39,3 +47,19 @@ flutter:
     - .env
     - assets/images/
     - assets/icons/
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Regular.ttf
+        - asset: assets/fonts/Montserrat-Bold.ttf
+          weight: 700

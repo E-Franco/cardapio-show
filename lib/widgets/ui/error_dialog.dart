@@ -1,53 +1,101 @@
 import 'package:flutter/material.dart';
-import 'package:cardapio_show/providers/error_provider.dart';
-import 'package:cardapio_show/utils/constants.dart';
+import 'package:provider/provider.dart';
+import 'package:cardapio_app/providers/error_provider.dart';
 
 class ErrorDialog extends StatelessWidget {
-  final ErrorData error;
-  final VoidCallback onDismiss;
-
-  const ErrorDialog({
-    super.key,
-    required this.error,
-    required this.onDismiss,
-  });
+  const ErrorDialog({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        children: [
-          _buildIcon(),
-          const SizedBox(width: 8),
-          Text(error.title),
-        ],
-      ),
-      content: Text(error.message),
-      actions: [
-        TextButton(
-          onPressed: onDismiss,
-          child: const Text('Fechar'),
-        ),
-        if (error.action != null)
-          ElevatedButton(
-            onPressed: () {
-              onDismiss();
-              error.action!.onPressed();
-            },
-            child: Text(error.action!.label),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildIcon() {
-    switch (error.severity) {
-      case ErrorSeverity.info:
-        return const Icon(Icons.info, color: Colors.blue);
-      case ErrorSeverity.warning:
-        return const Icon(Icons.warning, color: Colors.orange);
-      case ErrorSeverity.error:
-        return const Icon(Icons.error, color: AppColors.primary);
+    final errorProvider = Provider.of<ErrorProvider>(context);
+    
+    if (!errorProvider.isVisible) {
+      return const SizedBox.shrink();
     }
+    
+    final severity = errorProvider.severity;
+    final color = errorProvider.getColorForSeverity(severity);
+    final icon = errorProvider.getIconForSeverity(severity);
+    
+    return Positioned(
+      bottom: 16,
+      left: 16,
+      right: 16,
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(icon, color: color, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        errorProvider.errorTitle ?? 'Erro',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () => errorProvider.hideError(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      color: Colors.black54,
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      errorProvider.errorMessage ?? '',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    if (errorProvider.retryAction != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              errorProvider.hideError();
+                              errorProvider.retryAction!();
+                            },
+                            child: const Text('Tentar novamente'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

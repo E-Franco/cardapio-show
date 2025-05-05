@@ -1,135 +1,147 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cardapio_show/services/cache_service.dart';
-import 'package:cardapio_show/models/menu.dart';
-import 'package:cardapio_show/models/product.dart';
+import 'package:cardapio_app/services/cache_service.dart';
+import 'package:cardapio_app/models/user.dart';
+import 'package:cardapio_app/models/menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('CacheService', () {
     late CacheService cacheService;
-
-    setUp(() {
-      cacheService = CacheService();
+    
+    setUp(() async {
+      // Configurar SharedPreferences para testes
       SharedPreferences.setMockInitialValues({});
+      cacheService = CacheService();
+      await cacheService.init();
     });
-
-    test('should cache and retrieve user menus', () async {
+    
+    test('should save and retrieve user', () async {
       // Arrange
+      final user = User(
+        id: '123',
+        name: 'Test User',
+        email: 'test@example.com',
+        isAdmin: false,
+        menuQuota: 5,
+      );
+      
+      // Act
+      await cacheService.saveUser(user);
+      final retrievedUser = cacheService.getUser();
+      
+      // Assert
+      expect(retrievedUser, isNotNull);
+      expect(retrievedUser!.id, user.id);
+      expect(retrievedUser.name, user.name);
+      expect(retrievedUser.email, user.email);
+      expect(retrievedUser.isAdmin, user.isAdmin);
+      expect(retrievedUser.menuQuota, user.menuQuota);
+    });
+    
+    test('should clear user data', () async {
+      // Arrange
+      final user = User(
+        id: '123',
+        name: 'Test User',
+        email: 'test@example.com',
+        isAdmin: false,
+        menuQuota: 5,
+      );
+      await cacheService.saveUser(user);
+      
+      // Act
+      await cacheService.clearUser();
+      final retrievedUser = cacheService.getUser();
+      
+      // Assert
+      expect(retrievedUser, isNull);
+    });
+    
+    test('should save and retrieve menus', () async {
+      // Arrange
+      final now = DateTime.now();
       final menus = [
         Menu(
-          id: 'menu1',
+          id: '1',
           name: 'Menu 1',
-          userId: 'user1',
-          createdAt: DateTime.now(),
+          ownerId: 'user1',
+          createdAt: now,
+          updatedAt: now,
         ),
         Menu(
-          id: 'menu2',
+          id: '2',
           name: 'Menu 2',
-          userId: 'user1',
-          createdAt: DateTime.now(),
+          ownerId: 'user1',
+          createdAt: now,
+          updatedAt: now,
         ),
       ];
-
+      
       // Act
-      await cacheService.cacheUserMenus(menus);
-      final cachedMenus = await cacheService.getCachedUserMenus();
-
+      await cacheService.saveMenus(menus);
+      final retrievedMenus = cacheService.getMenus();
+      
       // Assert
-      expect(cachedMenus, isNotNull);
-      expect(cachedMenus!.length, 2);
-      expect(cachedMenus[0].id, 'menu1');
-      expect(cachedMenus[1].id, 'menu2');
+      expect(retrievedMenus, isNotNull);
+      expect(retrievedMenus!.length, 2);
+      expect(retrievedMenus[0].id, '1');
+      expect(retrievedMenus[0].name, 'Menu 1');
+      expect(retrievedMenus[1].id, '2');
+      expect(retrievedMenus[1].name, 'Menu 2');
     });
-
-    test('should cache and retrieve menu details', () async {
+    
+    test('should save and retrieve menu details', () async {
       // Arrange
+      final now = DateTime.now();
       final menu = Menu(
-        id: 'menu1',
-        name: 'Menu 1',
-        userId: 'user1',
-        createdAt: DateTime.now(),
-      );
-
-      // Act
-      await cacheService.cacheMenuDetails(menu);
-      final cachedMenu = await cacheService.getCachedMenuDetails('menu1');
-
-      // Assert
-      expect(cachedMenu, isNotNull);
-      expect(cachedMenu!.id, 'menu1');
-      expect(cachedMenu.name, 'Menu 1');
-    });
-
-    test('should cache and retrieve menu products', () async {
-      // Arrange
-      final products = [
-        Product(
-          id: 'prod1',
-          name: 'Product 1',
-          price: 10.99,
-          menuId: 'menu1',
-          categoryId: 'cat1',
-          orderIndex: 0,
-          type: ProductType.product,
-        ),
-        Product(
-          id: 'prod2',
-          name: 'Product 2',
-          price: 15.99,
-          menuId: 'menu1',
-          categoryId: 'cat1',
-          orderIndex: 1,
-          type: ProductType.product,
-        ),
-      ];
-
-      // Act
-      await cacheService.cacheMenuProducts('menu1', products);
-      final cachedProducts = await cacheService.getCachedMenuProducts('menu1');
-
-      // Assert
-      expect(cachedProducts, isNotNull);
-      expect(cachedProducts!.length, 2);
-      expect(cachedProducts[0].id, 'prod1');
-      expect(cachedProducts[1].id, 'prod2');
-    });
-
-    test('should clear user cache', () async {
-      // Arrange
-      final menu = Menu(
-        id: 'menu1',
-        name: 'Menu 1',
-        userId: 'user1',
-        createdAt: DateTime.now(),
+        id: '123',
+        name: 'Test Menu',
+        ownerId: 'user123',
+        createdAt: now,
+        updatedAt: now,
       );
       
-      final products = [
-        Product(
-          id: 'prod1',
-          name: 'Product 1',
-          price: 10.99,
-          menuId: 'menu1',
-          categoryId: 'cat1',
-          orderIndex: 0,
-          type: ProductType.product,
-        ),
-      ];
-
-      await cacheService.cacheMenuDetails(menu);
-      await cacheService.cacheMenuProducts('menu1', products);
-      await cacheService.cacheUserMenus([menu]);
-
       // Act
-      await cacheService.clearUserCache();
+      await cacheService.saveMenuDetails(menu);
+      final retrievedMenu = cacheService.getMenuDetails('123');
       
-      final cachedMenus = await cacheService.getCachedUserMenus();
-      final cachedMenu = await cacheService.getCachedMenuDetails('menu1');
-      final cachedProducts = await cacheService.getCachedMenuProducts('menu1');
-
       // Assert
-      expect(cachedMenus, isNull);
-      expect(cachedMenu, isNull);
-      expect(cachedProducts, isNull);
+      expect(retrievedMenu, isNotNull);
+      expect(retrievedMenu!.id, menu.id);
+      expect(retrievedMenu.name, menu.name);
+      expect(retrievedMenu.ownerId, menu.ownerId);
+    });
+    
+    test('should clear cache except user data', () async {
+      // Arrange
+      final now = DateTime.now();
+      final user = User(
+        id: '123',
+        name: 'Test User',
+        email: 'test@example.com',
+        isAdmin: false,
+        menuQuota: 5,
+      );
+      final menu = Menu(
+        id: '123',
+        name: 'Test Menu',
+        ownerId: 'user123',
+        createdAt: now,
+        updatedAt: now,
+      );
+      
+      await cacheService.saveUser(user);
+      await cacheService.saveMenuDetails(menu);
+      
+      // Act
+      await cacheService.clearCache();
+      
+      // Assert
+      final retrievedUser = cacheService.getUser();
+      final retrievedMenu = cacheService.getMenuDetails('123');
+      
+      expect(retrievedUser, isNotNull); // User should still exist
+      expect(retrievedMenu, isNull); // Menu should be cleared
     });
   });
 }
