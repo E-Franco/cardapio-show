@@ -82,6 +82,7 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       // Tentar fazer upload
       const uploadedUrl = await UploadService.uploadImage(file, "images")
       setImageUrl(uploadedUrl)
+      setIsUploading(false)
 
       toast({
         title: "Imagem carregada",
@@ -99,7 +100,6 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
 
       // Usar a URL de preview local como fallback
       setImageUrl(localPreview)
-    } finally {
       setIsUploading(false)
     }
   }

@@ -106,6 +106,7 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       // Tentar fazer upload
       const uploadedUrl = await UploadService.uploadImage(file, "products")
       setImageUrl(uploadedUrl)
+      setIsUploading(false)
 
       toast({
         title: "Imagem carregada",
@@ -123,7 +124,6 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
 
       // Usar a URL de preview local como fallback
       setImageUrl(localPreview)
-    } finally {
       setIsUploading(false)
     }
   }

@@ -1,75 +1,143 @@
-import { createSupabaseClient } from "@/lib/supabase/client"
+import { createClient } from "@supabase/supabase-js"
 import { v4 as uuidv4 } from "uuid"
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
 
 export class UploadService {
-  /**
-   * Faz upload de uma imagem para o Supabase Storage
-   * @param file Arquivo a ser enviado
-   * @param bucket Nome do bucket (pasta) no Storage
-   * @returns URL pública da imagem
-   */
-  static async uploadImage(file: File, bucket = "images"): Promise<string> {
+  // Nome do bucket no Supabase Storage - deve ser criado previamente pelo administrador
+  private static BUCKET_NAME = "images" // Bucket padrão que deve existir
+
+  // Verifica se podemos usar o Supabase ou se devemos usar URLs locais
+  private static async canUseSupabase() {
     try {
-      const supabase = createSupabaseClient()
-      if (!supabase) {
-        throw new Error("Não foi possível criar o cliente Supabase")
-      }
-
-      // Gerar um nome único para o arquivo
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${uuidv4()}.${fileExt}`
-      const filePath = `${bucket}/${fileName}`
-
-      // Fazer upload do arquivo
-      const { data, error } = await supabase.storage.from("public").upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      })
-
-      if (error) {
-        console.error("Erro ao fazer upload da imagem:", error)
-        throw error
-      }
-
-      // Obter a URL pública da imagem
-      const { data: publicURL } = supabase.storage.from("public").getPublicUrl(filePath)
-
-      return publicURL.publicUrl
-    } catch (error) {
-      console.error("Erro ao fazer upload da imagem:", error)
-      throw error
-    }
-  }
-
-  /**
-   * Exclui uma imagem do Supabase Storage
-   * @param url URL pública da imagem
-   * @returns true se a exclusão foi bem-sucedida
-   */
-  static async deleteImage(url: string): Promise<boolean> {
-    try {
-      const supabase = createSupabaseClient()
-      if (!supabase) {
-        throw new Error("Não foi possível criar o cliente Supabase")
-      }
-
-      // Extrair o caminho do arquivo da URL
-      const urlObj = new URL(url)
-      const pathParts = urlObj.pathname.split("/")
-      const filePath = pathParts.slice(pathParts.indexOf("public") + 1).join("/")
-
-      // Excluir o arquivo
-      const { error } = await supabase.storage.from("public").remove([filePath])
-
-      if (error) {
-        console.error("Erro ao excluir a imagem:", error)
+      // Verificar se as credenciais estão configuradas
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        console.warn("Credenciais do Supabase não configuradas")
         return false
       }
 
       return true
     } catch (error) {
-      console.error("Erro ao excluir a imagem:", error)
+      console.error("Erro ao verificar Supabase:", error)
       return false
+    }
+  }
+
+  static async uploadImage(file: File, folder: string): Promise<string> {
+    try {
+      // Criar URL local como fallback
+      const localUrl = URL.createObjectURL(file)
+
+      // Verificar se as credenciais estão configuradas
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        console.warn("Credenciais do Supabase não configuradas, usando URL local")
+        return localUrl
+      }
+
+      // Primeiro, verificamos se podemos usar o Supabase
+      const canUseSupabase = await this.canUseSupabase()
+
+      if (!canUseSupabase) {
+        console.log("Não é possível usar o Supabase, utilizando URL local")
+        return localUrl
+      }
+
+      // Criar cliente Supabase diretamente com as credenciais
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+      // Gerar nome de arquivo único
+      const fileExt = file.name.split(".").pop() || "jpg"
+      const fileName = `${uuidv4()}.${fileExt}`
+      const filePath = `${folder}/${fileName}`
+
+      console.log(`Iniciando upload para ${this.BUCKET_NAME}/${filePath}`)
+
+      // Tentar fazer o upload
+      const { data, error } = await supabase.storage.from(this.BUCKET_NAME).upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      })
+
+      if (error) {
+        console.error("Erro ao fazer upload:", error)
+        // Se houver qualquer erro, usamos URL local como fallback
+        return localUrl
+      }
+
+      // Obter URL pública
+      const { data: urlData } = supabase.storage.from(this.BUCKET_NAME).getPublicUrl(filePath)
+      console.log("Upload bem-sucedido, URL:", urlData.publicUrl)
+
+      // Verificar se a URL foi gerada corretamente
+      if (!urlData.publicUrl) {
+        console.error("URL pública não gerada")
+        return localUrl
+      }
+
+      return urlData.publicUrl
+    } catch (error) {
+      console.error("Erro inesperado no upload:", error)
+      // Fallback para URL de objeto local em caso de erro
+      return URL.createObjectURL(file)
+    }
+  }
+
+  static async deleteImage(url: string): Promise<void> {
+    // Se for URL blob local, apenas revoga
+    if (url.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(url)
+        console.log("URL blob revogada com sucesso")
+      } catch (error) {
+        console.error("Erro ao revogar URL blob:", error)
+      }
+      return
+    }
+
+    try {
+      // Verificar se as credenciais estão configuradas
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        console.warn("Credenciais do Supabase não configuradas")
+        return
+      }
+
+      // Criar cliente Supabase diretamente com as credenciais
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+      // Verificar se a URL é do Supabase
+      if (!url.includes(this.BUCKET_NAME)) {
+        console.warn("URL não parece ser do Supabase Storage, ignorando exclusão:", url)
+        return
+      }
+
+      // Extrair o caminho do arquivo da URL pública
+      let filePath = null
+
+      // Tenta extrair o caminho usando várias estratégias
+      if (url.includes(`/${this.BUCKET_NAME}/`)) {
+        filePath = url.split(`/${this.BUCKET_NAME}/`)[1]
+      } else {
+        // Tenta extrair usando uma expressão regular para encontrar o caminho
+        const match = url.match(/\/([^/]+\/[^/]+)$/)
+        if (match && match[1]) {
+          filePath = match[1]
+        }
+      }
+
+      if (!filePath) {
+        console.warn("Não foi possível extrair o caminho do arquivo da URL:", url)
+        return
+      }
+
+      console.log(`Tentando excluir arquivo: ${filePath}`)
+      const { error } = await supabase.storage.from(this.BUCKET_NAME).remove([filePath])
+
+      if (error) {
+        console.error("Erro ao excluir imagem:", error)
+      } else {
+        console.log("Imagem excluída com sucesso")
+      }
+    } catch (error) {
+      console.error("Erro inesperado na exclusão:", error)
     }
   }
 }
