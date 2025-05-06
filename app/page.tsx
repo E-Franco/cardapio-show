@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { MenuService, type Menu } from "@/lib/services/menu-service"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
 
 /**
  * Página inicial da aplicação
@@ -40,6 +41,15 @@ export default function Home() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [configError, setConfigError] = useState<string | null>(null)
+
+  // Verificar configuração do Supabase
+  useEffect(() => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      setConfigError("Configuração do Supabase incompleta. Verifique as variáveis de ambiente.")
+      setIsLoading(false)
+    }
+  }, [])
 
   // Verificar autenticação apenas uma vez após o carregamento inicial
   useEffect(() => {
@@ -50,7 +60,7 @@ export default function Home() {
 
   // Carregar menus apenas quando a autenticação for verificada e o usuário estiver presente
   useEffect(() => {
-    if (!authChecked || !user) {
+    if (!authChecked || !user || configError) {
       return
     }
 
@@ -102,7 +112,7 @@ export default function Home() {
     }, 5000) // 5 segundos de timeout
 
     return () => clearTimeout(safetyTimeout)
-  }, [user, authChecked, captureError])
+  }, [user, authChecked, captureError, isLoading, configError])
 
   /**
    * Verifica se o usuário pode criar um novo cardápio
@@ -169,6 +179,23 @@ export default function Home() {
         },
       })
     }
+  }
+
+  // Mostrar erro de configuração
+  if (configError) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
+            <h3 className="font-bold">Erro de Configuração</h3>
+            <p>{configError}</p>
+          </div>
+          <p className="text-muted-foreground mb-4">
+            Entre em contato com o administrador do sistema para resolver este problema.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   // Mostrar estado de carregamento enquanto verifica autenticação
