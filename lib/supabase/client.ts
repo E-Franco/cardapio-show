@@ -1,75 +1,27 @@
 import { createClient } from "@supabase/supabase-js"
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config"
 import type { Database } from "./database.types"
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config"
 
-// Exportação direta do createClient para compatibilidade
-export { createClient }
+// Variável para armazenar a instância única do cliente
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
 
 /**
- * Cliente Supabase singleton
- *
+ * Cria ou retorna uma instância existente do cliente Supabase
  * Implementa o padrão singleton para evitar múltiplas instâncias
- * do cliente Supabase, otimizando o uso de recursos.
- */
-let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null
-
-/**
- * Obtém uma instância do cliente Supabase para uso no navegador
- *
- * @returns Cliente Supabase ou null se não configurado
- */
-export function getSupabaseBrowser() {
-  // Não executar no servidor
-  if (typeof window === "undefined") return null
-
-  try {
-    // Retornar instância existente se disponível
-    if (supabaseInstance) return supabaseInstance
-
-    // Verificar se as variáveis de ambiente estão disponíveis
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      console.warn("Credenciais do Supabase não configuradas")
-      return null
-    }
-
-    // Criar nova instância
-    supabaseInstance = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    })
-
-    return supabaseInstance
-  } catch (error) {
-    console.error("Erro ao criar cliente Supabase:", error)
-    return null
-  }
-}
-
-/**
- * Cria um novo cliente Supabase
- *
- * Útil quando precisamos de uma instância separada do cliente,
- * por exemplo, em contextos específicos ou para testes.
- *
- * @returns Cliente Supabase ou null se não configurado
  */
 export function createSupabaseClient() {
+  // Se já temos uma instância, retorna ela
+  if (supabaseClient) {
+    return supabaseClient
+  }
+
+  // Verifica se as variáveis de ambiente estão definidas
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.warn("Credenciais do Supabase não configuradas")
+    console.error("Credenciais do Supabase não configuradas")
     return null
   }
 
-  try {
-    return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    })
-  } catch (error) {
-    console.error("Erro ao criar cliente Supabase:", error)
-    return null
-  }
+  // Cria uma nova instância
+  supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
+  return supabaseClient
 }

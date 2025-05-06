@@ -42,6 +42,7 @@ export default function Home() {
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
+  const [menusLoaded, setMenusLoaded] = useState(false)
 
   // Verificar configuração do Supabase
   useEffect(() => {
@@ -60,7 +61,9 @@ export default function Home() {
 
   // Carregar menus apenas quando a autenticação for verificada e o usuário estiver presente
   useEffect(() => {
-    if (!authChecked || !user || configError) {
+    // Evitar carregar menus se já foram carregados, se não há usuário,
+    // se a autenticação ainda não foi verificada ou se há erro de configuração
+    if (menusLoaded || !authChecked || !user || configError) {
       return
     }
 
@@ -79,23 +82,29 @@ export default function Home() {
           }
 
           setMenus(userMenus)
+          setMenusLoaded(true) // Marcar que os menus foram carregados
         } catch (error) {
           console.error("Erro ao carregar cardápios:", error)
           // Usar dados vazios em caso de erro
           setMenus([])
+          setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
           captureError(error, {
             title: "Erro ao carregar cardápios",
             description: "Não foi possível carregar seus cardápios. Tente novamente mais tarde.",
             severity: "error",
             action: {
               label: "Tentar novamente",
-              onClick: () => window.location.reload(),
+              onClick: () => {
+                setMenusLoaded(false) // Permitir nova tentativa
+                window.location.reload()
+              },
             },
           })
         }
       } catch (error) {
         console.error("Erro inesperado:", error)
         setMenus([])
+        setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
       } finally {
         setIsLoading(false)
       }
@@ -108,11 +117,12 @@ export default function Home() {
       if (isLoading) {
         setIsLoading(false)
         setMenus([]) // Definir menus como array vazio em caso de timeout
+        setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com timeout
       }
     }, 5000) // 5 segundos de timeout
 
     return () => clearTimeout(safetyTimeout)
-  }, [user, authChecked, captureError, isLoading, configError])
+  }, [user, authChecked, captureError, configError, menusLoaded]) // Removido isLoading das dependências
 
   /**
    * Verifica se o usuário pode criar um novo cardápio
