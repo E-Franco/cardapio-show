@@ -15,34 +15,7 @@ export class UploadService {
         return false
       }
 
-      // Criar cliente Supabase diretamente com as credenciais
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-      // Verificar se o usuário está autenticado
-      const { data: sessionData, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error("Erro ao verificar sessão:", error)
-        return false
-      }
-
-      if (!sessionData.session) {
-        console.warn("Usuário não autenticado")
-        return false
-      }
-
-      // Verificar se o bucket existe fazendo uma operação de lista
-      try {
-        const { data, error } = await supabase.storage.from(this.BUCKET_NAME).list("")
-        if (error) {
-          console.error("Erro ao verificar bucket:", error)
-          return false
-        }
-        // Se chegou aqui, o bucket existe e podemos acessá-lo
-        return true
-      } catch (e) {
-        console.error("Erro ao verificar acesso ao bucket:", e)
-        return false
-      }
+      return true
     } catch (error) {
       console.error("Erro ao verificar Supabase:", error)
       return false
@@ -51,10 +24,13 @@ export class UploadService {
 
   static async uploadImage(file: File, folder: string): Promise<string> {
     try {
+      // Criar URL local como fallback
+      const localUrl = URL.createObjectURL(file)
+
       // Verificar se as credenciais estão configuradas
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         console.warn("Credenciais do Supabase não configuradas, usando URL local")
-        return URL.createObjectURL(file)
+        return localUrl
       }
 
       // Primeiro, verificamos se podemos usar o Supabase
@@ -62,7 +38,7 @@ export class UploadService {
 
       if (!canUseSupabase) {
         console.log("Não é possível usar o Supabase, utilizando URL local")
-        return URL.createObjectURL(file)
+        return localUrl
       }
 
       // Criar cliente Supabase diretamente com as credenciais
@@ -84,7 +60,7 @@ export class UploadService {
       if (error) {
         console.error("Erro ao fazer upload:", error)
         // Se houver qualquer erro, usamos URL local como fallback
-        return URL.createObjectURL(file)
+        return localUrl
       }
 
       // Obter URL pública
@@ -94,7 +70,7 @@ export class UploadService {
       // Verificar se a URL foi gerada corretamente
       if (!urlData.publicUrl) {
         console.error("URL pública não gerada")
-        return URL.createObjectURL(file)
+        return localUrl
       }
 
       return urlData.publicUrl
@@ -121,13 +97,6 @@ export class UploadService {
       // Verificar se as credenciais estão configuradas
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         console.warn("Credenciais do Supabase não configuradas")
-        return
-      }
-
-      // Verificar se podemos usar o Supabase
-      const canUseSupabase = await this.canUseSupabase()
-      if (!canUseSupabase) {
-        console.warn("Não é possível usar o Supabase para excluir a imagem")
         return
       }
 

@@ -326,6 +326,9 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
     if (file) {
       setIsUploading(true)
       try {
+        // Criar preview local imediatamente
+        const localPreview = URL.createObjectURL(file)
+
         // Upload the file to Supabase Storage
         const imageUrl = await UploadService.uploadImage(file, "banners")
         setBannerImage(imageUrl)
@@ -564,25 +567,32 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   >
                     <ClientOnly>
                       {bannerImage ? (
-                        <div className="w-full">
+                        <div className="w-full relative">
+                          {/* Div para a cor de fundo */}
+                          <div
+                            className="absolute inset-0"
+                            style={{ backgroundColor: tempBannerColor || "#E5324B" }}
+                          ></div>
+
+                          {/* Imagem por cima da cor */}
                           {bannerImage.startsWith("blob:") ? (
                             <img
                               src={bannerImage || "/placeholder.svg"}
                               alt={menuName || "Banner"}
-                              className="w-full object-contain"
+                              className="w-full object-contain relative z-10"
                               style={{ display: "block" }}
                             />
                           ) : (
                             <img
                               src={bannerImage || "/placeholder.svg"}
                               alt={menuName || "Banner"}
-                              className="w-full object-contain"
+                              className="w-full object-contain relative z-10"
                               style={{ display: "block" }}
                             />
                           )}
 
                           {/* Overlay para o título */}
-                          <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="absolute inset-0 flex items-center justify-center z-20">
                             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent"></div>
 
                             {titlePosition === "banner" && (

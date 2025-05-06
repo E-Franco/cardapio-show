@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { UploadService } from "@/lib/services/upload-service"
-import Image from "next/image"
 
 interface AddImageFormProps {
   onAdd: (imageUrl: string) => void
@@ -74,27 +73,22 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       return
     }
 
+    // Criar preview local imediatamente
+    const localPreview = URL.createObjectURL(file)
+    setPreviewUrl(localPreview)
+
     setIsUploading(true)
     try {
-      // Criar preview local
-      const localPreview = URL.createObjectURL(file)
-      setPreviewUrl(localPreview)
-
-      // Upload da imagem
+      // Tentar fazer upload
       const uploadedUrl = await UploadService.uploadImage(file, "images")
       setImageUrl(uploadedUrl)
 
-      // Verificar se o upload foi bem-sucedido
-      if (uploadedUrl) {
-        toast({
-          title: "Imagem carregada",
-          description: uploadedUrl.startsWith("blob:")
-            ? "A imagem está sendo usada localmente."
-            : "A imagem foi carregada com sucesso.",
-        })
-      } else {
-        throw new Error("Falha ao obter URL da imagem")
-      }
+      toast({
+        title: "Imagem carregada",
+        description: uploadedUrl.startsWith("blob:")
+          ? "A imagem está sendo usada localmente."
+          : "A imagem foi carregada com sucesso.",
+      })
     } catch (error) {
       console.error("Error uploading image:", error)
       toast({
@@ -104,9 +98,7 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       })
 
       // Usar a URL de preview local como fallback
-      if (previewUrl) {
-        setImageUrl(previewUrl)
-      }
+      setImageUrl(localPreview)
     } finally {
       setIsUploading(false)
     }
@@ -114,6 +106,8 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Se não temos nem imageUrl nem previewUrl, mostrar erro
     if (!imageUrl && !previewUrl) {
       toast({
         title: "Imagem obrigatória",
@@ -164,17 +158,7 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
           <div className="mt-4">
             <Label className="text-base font-medium mb-2 block">Preview</Label>
             <div className="relative h-48 w-full border rounded-md overflow-hidden bg-slate-50">
-              {previewUrl.startsWith("blob:") ? (
-                <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="object-contain w-full h-full" />
-              ) : (
-                <Image
-                  src={previewUrl || "/placeholder.svg"}
-                  alt="Preview"
-                  fill
-                  className="object-contain"
-                  unoptimized={previewUrl.startsWith("blob:")}
-                />
-              )}
+              <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="object-contain w-full h-full" />
             </div>
           </div>
         )}

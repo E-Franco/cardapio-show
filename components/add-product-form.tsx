@@ -11,7 +11,6 @@ import { Loader2, ImageIcon, LinkIcon, Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { UploadService } from "@/lib/services/upload-service"
 import type { Product } from "@/lib/services/menu-service"
-import Image from "next/image"
 
 interface AddProductFormProps {
   onAdd: (product: Omit<Product, "id" | "menuId" | "orderIndex">) => void
@@ -44,7 +43,7 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
 
     return () => {
       // Limpar URLs de objeto quando o componente é desmontado
-      if (previewUrl && previewUrl.startsWith("blob:")) {
+      if (previewUrl && previewUrl.startsWith("blob:") && previewUrl !== initialProduct?.imageUrl) {
         URL.revokeObjectURL(previewUrl)
       }
     }
@@ -98,30 +97,32 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       return
     }
 
+    // Criar preview local imediatamente
+    const localPreview = URL.createObjectURL(file)
+    setPreviewUrl(localPreview)
+
     setIsUploading(true)
     try {
-      // Criar preview local
-      const localPreview = URL.createObjectURL(file)
-      setPreviewUrl(localPreview)
-
-      // Upload da imagem
+      // Tentar fazer upload
       const uploadedUrl = await UploadService.uploadImage(file, "products")
       setImageUrl(uploadedUrl)
 
       toast({
         title: "Imagem carregada",
-        description: "A imagem foi carregada com sucesso.",
+        description: uploadedUrl.startsWith("blob:")
+          ? "A imagem está sendo usada localmente."
+          : "A imagem foi carregada com sucesso.",
       })
     } catch (error) {
       console.error("Error uploading image:", error)
       toast({
         title: "Erro ao fazer upload",
-        description: "Não foi possível fazer o upload da imagem. Tente novamente.",
+        description: "Não foi possível fazer o upload da imagem. Usando versão local temporária.",
         variant: "destructive",
       })
 
-      // Limpar o input de arquivo para permitir nova tentativa
-      e.target.value = ""
+      // Usar a URL de preview local como fallback
+      setImageUrl(localPreview)
     } finally {
       setIsUploading(false)
     }
@@ -302,17 +303,7 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
             <div className="mt-4">
               <Label className="text-base font-medium mb-2 block">Preview</Label>
               <div className="relative h-48 w-full border rounded-md overflow-hidden bg-slate-50">
-                {previewUrl.startsWith("blob:") ? (
-                  <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="object-contain w-full h-full" />
-                ) : (
-                  <Image
-                    src={previewUrl || "/placeholder.svg"}
-                    alt="Preview"
-                    fill
-                    className="object-contain"
-                    unoptimized={previewUrl.startsWith("blob:")}
-                  />
-                )}
+                <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="object-contain w-full h-full" />
               </div>
             </div>
           ) : (
