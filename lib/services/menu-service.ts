@@ -49,7 +49,7 @@ export const MenuService = {
         throw new Error("Supabase configuration is missing. Check your environment variables.")
       }
 
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase.from("menus").insert(menu).select().single()
 
       if (error) throw error
@@ -63,7 +63,7 @@ export const MenuService = {
   // Função para obter um cardápio pelo ID
   async getMenu(id: string): Promise<Menu> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase.from("menus").select("*").eq("id", id).single()
 
       if (error) throw error
@@ -77,7 +77,7 @@ export const MenuService = {
   // Função para atualizar um cardápio
   async updateMenu(id: string, menu: Partial<Menu>): Promise<Menu> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase.from("menus").update(menu).eq("id", id).select().single()
 
       if (error) throw error
@@ -91,7 +91,7 @@ export const MenuService = {
   // Função para excluir um cardápio
   async deleteMenu(id: string): Promise<void> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { error } = await supabase.from("menus").delete().eq("id", id)
 
       if (error) throw error
@@ -104,7 +104,7 @@ export const MenuService = {
   // Função para obter todos os cardápios de um usuário
   async getUserMenus(userId: string): Promise<Menu[]> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase
         .from("menus")
         .select("*")
@@ -122,7 +122,7 @@ export const MenuService = {
   // Função para adicionar um produto ao cardápio
   async addProduct(product: Omit<Product, "id">): Promise<Product> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase.from("products").insert(product).select().single()
 
       if (error) throw error
@@ -136,7 +136,7 @@ export const MenuService = {
   // Função para adicionar uma imagem avulsa ao cardápio
   async addImage(image: { imageUrl: string; menuId: string; orderIndex: number }): Promise<Product> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const product = {
         name: "Imagem",
         imageUrl: image.imageUrl,
@@ -158,7 +158,7 @@ export const MenuService = {
   // Função para atualizar um produto
   async updateProduct(id: string, product: Partial<Product>): Promise<Product> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase.from("products").update(product).eq("id", id).select().single()
 
       if (error) throw error
@@ -172,7 +172,7 @@ export const MenuService = {
   // Função para excluir um produto
   async deleteProduct(id: string): Promise<void> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { error } = await supabase.from("products").delete().eq("id", id)
 
       if (error) throw error
@@ -185,7 +185,7 @@ export const MenuService = {
   // Função para obter todos os produtos de um cardápio
   async getMenuProducts(menuId: string): Promise<Product[]> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -203,7 +203,7 @@ export const MenuService = {
   // Função para adicionar ou atualizar as redes sociais de um cardápio
   async upsertSocialMedia(socialMedia: SocialMedia): Promise<SocialMedia> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
       // Verificar se já existe registro para este menuId
       const { data: existingData } = await supabase
@@ -243,7 +243,7 @@ export const MenuService = {
   // Função para obter as redes sociais de um cardápio
   async getMenuSocialMedia(menuId: string): Promise<SocialMedia | null> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const { data, error } = await supabase.from("social_media").select("*").eq("menuId", menuId).maybeSingle()
 
       if (error) throw error
@@ -257,7 +257,7 @@ export const MenuService = {
   // Função para obter todos os cardápios (para admin)
   async getAllMenus(page = 1, limit = 10, search?: string): Promise<{ menus: any[]; count: number }> {
     try {
-      const supabase = createClient()
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       const offset = (page - 1) * limit
 
       let query = supabase.from("menus").select("*, users!inner(email, name)", { count: "exact" })
