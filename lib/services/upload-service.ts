@@ -1,6 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
+import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { v4 as uuidv4 } from "uuid"
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
 
 export class UploadService {
   // Nome do bucket no Supabase Storage - deve ser criado previamente pelo administrador
@@ -9,12 +8,11 @@ export class UploadService {
   // Verifica se podemos usar o Supabase ou se devemos usar URLs locais
   private static async canUseSupabase() {
     try {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        console.warn("Credenciais do Supabase não configuradas")
+      const supabase = getSupabaseBrowser()
+      if (!supabase) {
+        console.warn("Cliente Supabase não disponível")
         return false
       }
-
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
       // Verificar se o usuário está autenticado
       const { data: sessionData, error } = await supabase.auth.getSession()
@@ -57,7 +55,8 @@ export class UploadService {
         return URL.createObjectURL(file)
       }
 
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      const supabase = getSupabaseBrowser()
+      if (!supabase) throw new Error("Supabase client não disponível")
 
       // Gerar nome de arquivo único
       const fileExt = file.name.split(".").pop() || "jpg"
@@ -116,7 +115,8 @@ export class UploadService {
         return
       }
 
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      const supabase = getSupabaseBrowser()
+      if (!supabase) throw new Error("Supabase client não disponível")
 
       // Verificar se a URL é do Supabase
       if (!url.includes(this.BUCKET_NAME)) {

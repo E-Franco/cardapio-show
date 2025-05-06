@@ -84,27 +84,20 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       const uploadedUrl = await UploadService.uploadImage(file, "images")
       setImageUrl(uploadedUrl)
 
-      // Verificar se o upload foi bem-sucedido
-      if (uploadedUrl) {
-        toast({
-          title: "Imagem carregada",
-          description: uploadedUrl.startsWith("blob:")
-            ? "A imagem está sendo usada localmente."
-            : "A imagem foi carregada com sucesso.",
-        })
-      } else {
-        throw new Error("Falha ao obter URL da imagem")
-      }
+      toast({
+        title: "Imagem carregada",
+        description: "A imagem foi carregada com sucesso.",
+      })
     } catch (error) {
       console.error("Error uploading image:", error)
       toast({
         title: "Erro ao fazer upload",
-        description: "Não foi possível fazer o upload da imagem. Usando versão local temporária.",
+        description: "Não foi possível fazer o upload da imagem. Tente novamente.",
         variant: "destructive",
       })
 
-      // Usar a URL de preview local como fallback
-      setImageUrl(previewUrl)
+      // Limpar o input de arquivo para permitir nova tentativa
+      e.target.value = ""
     } finally {
       setIsUploading(false)
     }
@@ -112,7 +105,7 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!imageUrl && !previewUrl) {
+    if (!imageUrl) {
       toast({
         title: "Imagem obrigatória",
         description: "Por favor, selecione uma imagem para continuar.",
@@ -121,9 +114,7 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       return
     }
 
-    // Se temos uma URL de imagem, usamos ela, caso contrário usamos a URL de preview
-    const finalImageUrl = imageUrl || previewUrl
-    onAdd(finalImageUrl)
+    onAdd(imageUrl)
     resetForm()
   }
 
@@ -182,7 +173,7 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
         <Button type="button" variant="outline" onClick={handleCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isUploading} className="bg-[#E5324B] hover:bg-[#d02a41]">
+        <Button type="submit" disabled={isUploading || !imageUrl} className="bg-[#E5324B] hover:bg-[#d02a41]">
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
