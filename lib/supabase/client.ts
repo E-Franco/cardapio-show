@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
-import { supabaseConfig } from "./config"
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config"
 import type { Database } from "./database.types"
 
 // Exportação direta do createClient para compatibilidade
@@ -27,12 +27,13 @@ export function getSupabaseBrowser() {
     if (supabaseInstance) return supabaseInstance
 
     // Verificar se as variáveis de ambiente estão disponíveis
-    if (!supabaseConfig.isConfigured()) {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.warn("Credenciais do Supabase não configuradas")
       return null
     }
 
     // Criar nova instância
-    supabaseInstance = createClient<Database>(supabaseConfig.url, supabaseConfig.anonKey, {
+    supabaseInstance = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -55,10 +56,13 @@ export function getSupabaseBrowser() {
  * @returns Cliente Supabase ou null se não configurado
  */
 export function createSupabaseClient() {
-  if (!supabaseConfig.isConfigured()) return null
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn("Credenciais do Supabase não configuradas")
+    return null
+  }
 
   try {
-    return createClient<Database>(supabaseConfig.url, supabaseConfig.anonKey, {
+    return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
