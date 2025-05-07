@@ -1,3 +1,4 @@
+// Vamos adicionar o método getPublicMenu que está faltando
 import { createSupabaseClient } from "@/lib/supabase/client"
 
 export type TitlePosition = "banner" | "below" | "hidden"
@@ -249,7 +250,7 @@ export class MenuService {
         bannerLink: menu.banner_link || undefined,
         showLinkButton: menu.show_link_button,
         backgroundColor: menu.background_color || undefined,
-        textColor: menu.text_color || undefined,
+        textColor: data.text_color || undefined,
         titlePosition: (menu.title_position as TitlePosition) || "banner",
         fontFamily: menu.font_family || undefined,
         bodyBackgroundColor: menu.body_background_color || undefined,
@@ -261,8 +262,6 @@ export class MenuService {
       throw error
     }
   }
-
-  // Adicionar o método upsertSocialMedia após o método getAllMenus
 
   static async upsertSocialMedia(socialMedia: SocialMedia): Promise<SocialMedia> {
     try {
@@ -529,6 +528,53 @@ export class MenuService {
       throw error
     }
   }
-  // Restante dos métodos...
-  // (Mantendo os mesmos métodos, apenas substituindo a criação do cliente)
+
+  // Adicionar o método getPublicMenu
+  static async getPublicMenu(
+    id: string,
+  ): Promise<{ menu: Menu | null; products: Product[]; socialMedia: SocialMedia | null }> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      // Buscar o menu
+      const { data: menuData, error: menuError } = await supabase.from("menus").select("*").eq("id", id).single()
+
+      if (menuError) {
+        if (menuError.code === "PGRST116") {
+          // Menu não encontrado
+          return { menu: null, products: [], socialMedia: null }
+        }
+        console.error("Error getting public menu:", menuError)
+        throw menuError
+      }
+
+      // Converter dados do menu
+      const menu: Menu = {
+        id: menuData.id,
+        name: menuData.name,
+        bannerColor: menuData.banner_color || undefined,
+        bannerImage: menuData.banner_image || undefined,
+        bannerLink: menuData.banner_link || undefined,
+        showLinkButton: menuData.show_link_button,
+        backgroundColor: menuData.background_color || undefined,
+        textColor: menuData.text_color || undefined,
+        titlePosition: (menuData.title_position as TitlePosition) || "banner",
+        fontFamily: menuData.font_family || undefined,
+        bodyBackgroundColor: menuData.body_background_color || undefined,
+        userId: menuData.user_id,
+        createdAt: menuData.created_at,
+      }
+
+      // Buscar produtos
+      const products = await this.getMenuProducts(id)
+
+      // Buscar redes sociais
+      const socialMedia = await this.getMenuSocialMedia(id)
+
+      return { menu, products, socialMedia }
+    } catch (error) {
+      console.error("Error getting public menu:", error)
+      throw error
+    }
+  }
 }

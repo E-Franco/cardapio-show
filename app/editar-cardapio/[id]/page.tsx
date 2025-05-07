@@ -486,8 +486,8 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: tempBodyBackgroundColor }}>
-      <div className="container mx-auto py-6 px-4 sm:px-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+      <div className="container mx-auto py-8 px-4 sm:px-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
           <div className="flex items-center">
             <Link href="/" className="mr-4">
               <Button variant="ghost" size="icon" className="rounded-full">
@@ -501,7 +501,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
               </p>
             </div>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex gap-3 w-full md:w-auto">
             <Button variant="outline" onClick={togglePreview} className="flex-1 md:flex-none">
               <Eye className="mr-2 h-4 w-4" />
               {showPreview ? "Ocultar Preview" : "Mostrar Preview"}
@@ -529,15 +529,15 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid gap-8 lg:grid-cols-5">
           {/* Editor Column */}
           <div className={`space-y-8 ${showPreview ? "lg:col-span-3" : "lg:col-span-5"}`}>
             {/* Informações Básicas */}
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-8">
                 <SectionHeader icon={<Hash className="h-4 w-4" />} title="Informações Básicas" />
 
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   <div>
                     <Label htmlFor="menu-name" className="text-base font-medium">
                       Nome do Cardápio
@@ -547,7 +547,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                       value={menuName}
                       onChange={(e) => setMenuName(e.target.value)}
                       placeholder="Ex: Cardápio de Verão"
-                      className="mt-1.5"
+                      className="mt-2"
                     />
                   </div>
                 </div>
@@ -556,11 +556,11 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
 
             {/* Banner */}
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-8">
                 <SectionHeader icon={<ImageIcon className="h-4 w-4" />} title="Banner" />
 
                 {/* Banner Preview */}
-                <div className="-mx-4 sm:mx-0">
+                <div className="-mx-4 sm:mx-0 mb-6">
                   <div
                     className="sm:rounded-lg relative overflow-hidden"
                     style={{ backgroundColor: tempBannerColor || "#E5324B" }}
@@ -622,7 +622,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 mt-6">
+                <div className="grid gap-8 md:grid-cols-2">
                   <div>
                     <Label htmlFor="banner-color" className="text-base font-medium">
                       Cor do Banner
@@ -632,7 +632,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                       onChange={setBannerColor}
                       onTempChange={setTempBannerColor}
                       allowTransparent={false}
-                      previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                      previewClassName="bg-gradient-to-r from-white to-gray-100 mt-2"
                     />
                   </div>
 
@@ -640,7 +640,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                     <Label htmlFor="banner-image" className="text-base font-medium">
                       Imagem do Banner (opcional)
                     </Label>
-                    <div className="flex gap-2 mt-1.5">
+                    <div className="flex gap-2 mt-2">
                       <Input
                         id="banner-image"
                         type="file"
@@ -673,7 +673,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                     <Label htmlFor="banner-link" className="text-base font-medium">
                       Link do Banner (opcional)
                     </Label>
-                    <div className="relative mt-1.5">
+                    <div className="relative mt-2">
                       <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="banner-link"
@@ -691,27 +691,27 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-6 border-t">
-                  <h3 className="text-base font-medium mb-3">Posição do Título</h3>
+                <div className="mt-8 pt-6 border-t">
+                  <h3 className="text-base font-medium mb-4">Posição do Título</h3>
                   <RadioGroup
                     value={titlePosition}
                     onValueChange={(value) => setTitlePosition(value as "banner" | "below" | "hidden")}
-                    className="mt-1.5"
+                    className="mt-2"
                   >
                     <div className="grid gap-4 md:grid-cols-3">
-                      <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-slate-50 cursor-pointer">
                         <RadioGroupItem value="banner" id="title-banner" />
                         <Label htmlFor="title-banner" className="cursor-pointer">
                           Dentro do Banner
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-slate-50 cursor-pointer">
                         <RadioGroupItem value="below" id="title-below" />
                         <Label htmlFor="title-below" className="cursor-pointer">
                           Abaixo do Banner
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-slate-50 cursor-pointer">
                         <RadioGroupItem value="hidden" id="title-hidden" />
                         <Label htmlFor="title-hidden" className="cursor-pointer">
                           Não Exibir
@@ -725,15 +725,15 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
 
             {/* Aparência */}
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-8">
                 <SectionHeader icon={<Palette className="h-4 w-4" />} title="Aparência" />
 
-                <div className="grid gap-6">
+                <div className="grid gap-8">
                   <div>
                     <Label htmlFor="font-family" className="text-base font-medium">
                       Fonte do Cardápio
                     </Label>
-                    <div className="mt-1.5">
+                    <div className="mt-2">
                       <Select value={fontFamily} onValueChange={setFontFamily}>
                         <SelectTrigger id="font-family">
                           <SelectValue placeholder="Selecione uma fonte" />
@@ -746,13 +746,13 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <div className="mt-2 p-3 border rounded-lg text-center" style={{ fontFamily }}>
+                      <div className="mt-3 p-4 border rounded-lg text-center" style={{ fontFamily }}>
                         <span>Exemplo de texto com a fonte {fontFamily}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2">
+                  <div className="grid gap-8 md:grid-cols-2">
                     <div>
                       <Label htmlFor="body-background-color" className="text-base font-medium">
                         Cor de Fundo da Página
@@ -762,7 +762,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                         onChange={setBodyBackgroundColor}
                         onTempChange={setTempBodyBackgroundColor}
                         allowTransparent={true}
-                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-2"
                       />
                     </div>
 
@@ -775,7 +775,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                         onChange={setBackgroundColor}
                         onTempChange={setTempBackgroundColor}
                         allowTransparent={true}
-                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-2"
                       />
                     </div>
 
@@ -788,9 +788,9 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                         onChange={setTextColor}
                         onTempChange={setTempTextColor}
                         allowTransparent={false}
-                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-2"
                       />
-                      <p className="text-xs text-muted-foreground mt-1.5">
+                      <p className="text-xs text-muted-foreground mt-2">
                         A cor da descrição dos produtos será automaticamente derivada desta cor.
                       </p>
                     </div>
@@ -801,12 +801,12 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
 
             {/* Redes Sociais */}
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-8">
                 <SectionHeader icon={<Share2 className="h-4 w-4" />} title="Redes Sociais" />
 
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-8 md:grid-cols-3">
                   <div>
-                    <Label htmlFor="instagram" className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="instagram" className="flex items-center gap-2 mb-3">
                       <Instagram className="h-4 w-4 text-pink-500" />
                       Instagram
                     </Label>
@@ -825,7 +825,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   </div>
 
                   <div>
-                    <Label htmlFor="facebook" className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="facebook" className="flex items-center gap-2 mb-3">
                       <Facebook className="h-4 w-4 text-blue-600" />
                       Facebook
                     </Label>
@@ -838,7 +838,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   </div>
 
                   <div>
-                    <Label htmlFor="twitter" className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="twitter" className="flex items-center gap-2 mb-3">
                       <Twitter className="h-4 w-4 text-sky-500" />
                       Twitter
                     </Label>
@@ -857,14 +857,14 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mt-6">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                <div className="bg-slate-50 p-5 rounded-lg border border-slate-100 mt-8">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
                       <LinkIcon className="h-3 w-3 text-[#E5324B]" />
                     </div>
                     Visualização do Footer
                   </h4>
-                  <div className="border rounded-lg p-4 bg-white">
+                  <div className="border rounded-lg p-5 bg-white">
                     <div className="flex justify-center space-x-6 mb-4">
                       {instagram && (
                         <div className="p-2 rounded-full bg-slate-50 text-pink-500">
@@ -896,16 +896,16 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
 
             {/* Produtos */}
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-8">
                 <SectionHeader icon={<Layers className="h-4 w-4" />} title="Produtos e Imagens" />
 
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-8">
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Adicione produtos e imagens que serão exibidos no seu cardápio
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Button
                       onClick={() => {
                         setEditingProduct(null)
@@ -932,7 +932,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                 </div>
 
                 {showAddProduct && (
-                  <Card className="mb-6">
+                  <Card className="mb-8">
                     <CardHeader>
                       <CardTitle className="text-lg">{editingProduct ? "Editar Produto" : "Novo Produto"}</CardTitle>
                     </CardHeader>
@@ -951,7 +951,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                 )}
 
                 {showAddImage && (
-                  <Card className="mb-6">
+                  <Card className="mb-8">
                     <CardHeader>
                       <CardTitle className="text-lg">Adicionar Imagem</CardTitle>
                     </CardHeader>
@@ -967,7 +967,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                 )}
 
                 {products.length > 0 ? (
-                  <div className="grid gap-4">
+                  <div className="grid gap-5">
                     {products.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -978,16 +978,16 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12 border rounded-lg bg-slate-50">
+                  <div className="text-center py-16 border rounded-lg bg-slate-50">
                     <div className="flex flex-col items-center">
                       <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
                         <ImageIcon className="h-8 w-8 text-[#E5324B]" />
                       </div>
-                      <h4 className="font-medium mb-2">Nenhum item adicionado</h4>
-                      <p className="text-muted-foreground mb-4">
+                      <h4 className="font-medium mb-3">Nenhum item adicionado</h4>
+                      <p className="text-muted-foreground mb-5">
                         Clique em "Adicionar Produto" ou "Adicionar Imagem" para começar a criar seu cardápio.
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <Button
                           onClick={() => setShowAddProduct(true)}
                           variant="outline"
@@ -1012,7 +1012,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
             </Card>
 
             {/* Save Button */}
-            <div className="flex justify-end mt-6 sticky bottom-4 z-10">
+            <div className="flex justify-end mt-8 sticky bottom-4 z-10">
               <Button
                 onClick={handleSaveMenu}
                 size="lg"

@@ -28,8 +28,9 @@ export default function ShareMenuDialog({ menuId, menuName }: ShareMenuDialogPro
   const { handleError } = useErrorHandler()
   const [copied, setCopied] = useState(false)
   const [showQRCode, setShowQRCode] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
 
-  // Gerar URL do cardápio
+  // Gerar URL do cardápio - corrigido para usar /cardapio/[id]
   const menuUrl = typeof window !== "undefined" ? `${window.location.origin}/cardapio/${menuId}` : `/cardapio/${menuId}`
 
   const handleCopyLink = async () => {
@@ -81,7 +82,7 @@ export default function ShareMenuDialog({ menuId, menuName }: ShareMenuDialogPro
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="flex-1 md:flex-none">
           <Share2 className="mr-2 h-4 w-4" />
