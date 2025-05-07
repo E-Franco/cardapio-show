@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Loader2, QrCode } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import PreviewMenu from "@/components/preview-menu"
 import { MenuService } from "@/lib/services/menu-service"
 import { useToast } from "@/components/ui/use-toast"
@@ -17,6 +17,7 @@ export default function PreviewCardapio({ params }: { params: { id: string } }) 
   const router = useRouter()
   const { toast } = useToast()
   const { handleError } = useErrorHandler()
+  const isMounted = useRef(true)
 
   const [isLoading, setIsLoading] = useState(true)
   const [menu, setMenu] = useState<any>(null)
@@ -25,23 +26,38 @@ export default function PreviewCardapio({ params }: { params: { id: string } }) 
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Configurar o isMounted como true quando o componente é montado
+    isMounted.current = true
+
     const loadMenuData = async () => {
+      if (!isMounted.current) return
+
       setIsLoading(true)
       setError(null)
 
       try {
+        console.log("Carregando dados do cardápio para preview:", id)
+
         // Carregar dados do menu
         const menuData = await MenuService.getMenu(id)
+        if (!isMounted.current) return
+        console.log("Dados do menu carregados:", menuData)
         setMenu(menuData)
 
         // Carregar produtos
         const menuProducts = await MenuService.getMenuProducts(id)
+        if (!isMounted.current) return
+        console.log("Produtos carregados:", menuProducts)
         setProducts(menuProducts)
 
         // Carregar redes sociais
         const socialMediaData = await MenuService.getMenuSocialMedia(id)
+        if (!isMounted.current) return
+        console.log("Redes sociais carregadas:", socialMediaData)
         setSocialMedia(socialMediaData)
       } catch (error) {
+        if (!isMounted.current) return
+
         console.error("Erro ao carregar dados do cardápio:", error)
         handleError(error, {
           title: "Erro ao carregar preview",
@@ -49,11 +65,18 @@ export default function PreviewCardapio({ params }: { params: { id: string } }) 
         })
         setError("Não foi possível carregar os dados do cardápio. Tente novamente mais tarde.")
       } finally {
-        setIsLoading(false)
+        if (isMounted.current) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadMenuData()
+
+    // Limpar quando o componente for desmontado
+    return () => {
+      isMounted.current = false
+    }
   }, [id, handleError])
 
   // Criar objeto de redes sociais para o preview
@@ -162,10 +185,6 @@ export default function PreviewCardapio({ params }: { params: { id: string } }) 
               Este é um preview do seu cardápio. Compartilhe o link para que seus clientes possam acessá-lo.
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <QrCode className="h-4 w-4" />
-                <span>QR Code</span>
-              </Button>
               <ShareMenuDialog menuId={id} menuName={menu.name} />
             </div>
           </div>

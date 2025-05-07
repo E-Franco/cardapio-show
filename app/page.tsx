@@ -23,7 +23,6 @@ import { Badge } from "@/components/ui/badge"
 import { MenuService, type Menu } from "@/lib/services/menu-service"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
-import ConnectionTest from "@/components/connection-test"
 
 /**
  * Página inicial da aplicação
@@ -44,7 +43,6 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const [menusLoaded, setMenusLoaded] = useState(false)
-  const [showConnectionTest, setShowConnectionTest] = useState(false)
 
   // Verificar configuração do Supabase
   useEffect(() => {
@@ -112,9 +110,6 @@ export default function Home() {
               },
             },
           })
-
-          // Mostrar o teste de conexão em caso de erro
-          setShowConnectionTest(true)
         }
       } catch (error) {
         console.error("Erro inesperado:", error)
@@ -123,7 +118,6 @@ export default function Home() {
 
         setMenus([])
         setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
-        setShowConnectionTest(true)
       } finally {
         if (isMounted) {
           setIsLoading(false)
@@ -143,12 +137,11 @@ export default function Home() {
         setIsLoading(false)
         setMenus([]) // Definir menus como array vazio em caso de timeout
         setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com timeout
-        setShowConnectionTest(true)
       }
     }, 5000) // 5 segundos de timeout
 
     return () => clearTimeout(safetyTimeout)
-  }, [user, authChecked, captureError, configError, menusLoaded, isLoading])
+  }, [user, authChecked, captureError, configError, menusLoaded])
 
   /**
    * Verifica se o usuário pode criar um novo cardápio
@@ -295,13 +288,6 @@ export default function Home() {
               Criar Novo Cardápio
             </Button>
           </div>
-
-          {/* Teste de conexão (mostrado apenas se houver erro) */}
-          {showConnectionTest && (
-            <div className="mb-4">
-              <ConnectionTest />
-            </div>
-          )}
 
           {/* Contador de cardápios com destaque */}
           {user && !user.isAdmin && (

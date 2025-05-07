@@ -43,8 +43,10 @@ export default function CardapioPage() {
 
         // Verificar se o ID é válido
         if (!id) {
-          setError("ID do cardápio inválido")
-          setIsLoading(false)
+          if (isMounted) {
+            setError("ID do cardápio inválido")
+            setIsLoading(false)
+          }
           return
         }
 

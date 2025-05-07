@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Instagram, Facebook, Twitter } from "lucide-react"
@@ -17,8 +17,8 @@ interface Product {
   id: string
   name: string
   description?: string | null
-  price?: number
-  imageUrl?: string
+  price?: number | null
+  imageUrl?: string | null
   externalLink?: string | null
   menuId: string
   orderIndex: number
@@ -60,6 +60,12 @@ export default function PreviewMenu({
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
   const [currentExternalUrl, setCurrentExternalUrl] = useState<string | null>(null)
   const [currentLinkTitle, setCurrentLinkTitle] = useState("")
+  const [isClient, setIsClient] = useState(false)
+
+  // Verificar se estamos no cliente para evitar erros de hidratação
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // Função para abrir o modal com um link específico
   const openExternalLink = (url: string, title = "Link Externo") => {
@@ -115,6 +121,10 @@ export default function PreviewMenu({
   // Verificar se temos produtos válidos
   const validProducts = Array.isArray(products) ? products : []
 
+  if (!isClient) {
+    return null // Não renderizar nada até que estejamos no cliente
+  }
+
   return (
     <div
       className="flex flex-col min-h-[500px] max-w-md mx-auto overflow-hidden rounded-lg shadow-sm"
@@ -132,7 +142,7 @@ export default function PreviewMenu({
         {bannerImage ? (
           // Se tiver imagem, não definimos altura fixa para o contêiner
           <div className="w-full">
-            {bannerImage.startsWith("blob:") ? (
+            {bannerImage.startsWith("blob:") || bannerImage.startsWith("data:") ? (
               <img
                 src={bannerImage || "/placeholder.svg"}
                 alt={name || "Banner"}
@@ -200,7 +210,7 @@ export default function PreviewMenu({
                 {product.type === "image" ? (
                   // Renderização de imagem avulsa
                   <div className="w-full relative rounded-lg overflow-hidden">
-                    {product.imageUrl?.startsWith("blob:") ? (
+                    {product.imageUrl?.startsWith("blob:") || product.imageUrl?.startsWith("data:") ? (
                       <img
                         src={product.imageUrl || "/placeholder.svg"}
                         alt="Imagem"
@@ -227,7 +237,7 @@ export default function PreviewMenu({
                   >
                     {product.imageUrl && (
                       <div className="shrink-0 w-[60px] h-[60px] relative">
-                        {product.imageUrl.startsWith("blob:") ? (
+                        {product.imageUrl.startsWith("blob:") || product.imageUrl.startsWith("data:") ? (
                           <img
                             src={product.imageUrl || "/placeholder.svg"}
                             alt={product.name}
