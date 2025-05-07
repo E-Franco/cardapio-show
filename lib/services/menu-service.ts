@@ -262,6 +262,273 @@ export class MenuService {
     }
   }
 
+  // Adicionar o método upsertSocialMedia após o método getAllMenus
+
+  static async upsertSocialMedia(socialMedia: SocialMedia): Promise<SocialMedia> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      // Verificar se já existe um registro para este menuId
+      const { data: existingData, error: fetchError } = await supabase
+        .from("social_media")
+        .select("*")
+        .eq("menu_id", socialMedia.menuId)
+        .maybeSingle()
+
+      if (fetchError && fetchError.code !== "PGRST116") {
+        console.error("Error fetching social media:", fetchError)
+        throw fetchError
+      }
+
+      let result
+
+      if (existingData) {
+        // Atualizar registro existente
+        const { data, error } = await supabase
+          .from("social_media")
+          .update({
+            instagram: socialMedia.instagram,
+            facebook: socialMedia.facebook,
+            twitter: socialMedia.twitter,
+          })
+          .eq("id", existingData.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error("Error updating social media:", error)
+          throw error
+        }
+
+        result = data
+      } else {
+        // Inserir novo registro
+        const { data, error } = await supabase
+          .from("social_media")
+          .insert({
+            menu_id: socialMedia.menuId,
+            instagram: socialMedia.instagram,
+            facebook: socialMedia.facebook,
+            twitter: socialMedia.twitter,
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error("Error inserting social media:", error)
+          throw error
+        }
+
+        result = data
+      }
+
+      return {
+        id: result.id,
+        menuId: result.menu_id,
+        instagram: result.instagram || undefined,
+        facebook: result.facebook || undefined,
+        twitter: result.twitter || undefined,
+      }
+    } catch (error) {
+      console.error("Error upserting social media:", error)
+      throw error
+    }
+  }
+
+  static async getMenuSocialMedia(menuId: string): Promise<SocialMedia | null> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      const { data, error } = await supabase.from("social_media").select("*").eq("menu_id", menuId).maybeSingle()
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error getting menu social media:", error)
+        throw error
+      }
+
+      if (!data) {
+        return null
+      }
+
+      return {
+        id: data.id,
+        menuId: data.menu_id,
+        instagram: data.instagram || undefined,
+        facebook: data.facebook || undefined,
+        twitter: data.twitter || undefined,
+      }
+    } catch (error) {
+      console.error("Error getting menu social media:", error)
+      throw error
+    }
+  }
+
+  static async getMenuProducts(menuId: string): Promise<Product[]> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("menu_id", menuId)
+        .order("order_index", { ascending: true })
+
+      if (error) {
+        console.error("Error getting menu products:", error)
+        throw error
+      }
+
+      return data.map((product) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        imageUrl: product.image_url,
+        externalLink: product.external_link,
+        menuId: product.menu_id,
+        orderIndex: product.order_index,
+        type: product.type || "product",
+      }))
+    } catch (error) {
+      console.error("Error getting menu products:", error)
+      throw error
+    }
+  }
+
+  static async addProduct(product: Omit<Product, "id">): Promise<Product> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      const { data, error } = await supabase
+        .from("products")
+        .insert({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          image_url: product.imageUrl,
+          external_link: product.externalLink,
+          menu_id: product.menuId,
+          order_index: product.orderIndex,
+          type: product.type || "product",
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error adding product:", error)
+        throw error
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        imageUrl: data.image_url,
+        externalLink: data.external_link,
+        menuId: data.menu_id,
+        orderIndex: data.order_index,
+        type: data.type || "product",
+      }
+    } catch (error) {
+      console.error("Error adding product:", error)
+      throw error
+    }
+  }
+
+  static async updateProduct(
+    id: string,
+    product: Partial<Omit<Product, "id" | "menuId" | "orderIndex">>,
+  ): Promise<Product> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      const { data, error } = await supabase
+        .from("products")
+        .update({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          image_url: product.imageUrl,
+          external_link: product.externalLink,
+          type: product.type,
+        })
+        .eq("id", id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error updating product:", error)
+        throw error
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        imageUrl: data.image_url,
+        externalLink: data.external_link,
+        menuId: data.menu_id,
+        orderIndex: data.order_index,
+        type: data.type || "product",
+      }
+    } catch (error) {
+      console.error("Error updating product:", error)
+      throw error
+    }
+  }
+
+  static async deleteProduct(id: string): Promise<void> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      const { error } = await supabase.from("products").delete().eq("id", id)
+
+      if (error) {
+        console.error("Error deleting product:", error)
+        throw error
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error)
+      throw error
+    }
+  }
+
+  static async addImage(image: { imageUrl: string; menuId: string; orderIndex: number }): Promise<Product> {
+    try {
+      const supabase = this.getSupabaseClient()
+
+      const { data, error } = await supabase
+        .from("products")
+        .insert({
+          name: "Imagem",
+          image_url: image.imageUrl,
+          menu_id: image.menuId,
+          order_index: image.orderIndex,
+          type: "image",
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error adding image:", error)
+        throw error
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        imageUrl: data.image_url,
+        menuId: data.menu_id,
+        orderIndex: data.order_index,
+        type: "image",
+      }
+    } catch (error) {
+      console.error("Error adding image:", error)
+      throw error
+    }
+  }
   // Restante dos métodos...
   // (Mantendo os mesmos métodos, apenas substituindo a criação do cliente)
 }

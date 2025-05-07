@@ -8,15 +8,35 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, Eye, ImageIcon, LinkIcon, Hash, Trash2, Loader2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Eye,
+  Instagram,
+  Facebook,
+  Twitter,
+  Palette,
+  ImageIcon,
+  LinkIcon,
+  Share2,
+  Hash,
+  Layers,
+  Plus,
+  Trash2,
+  Loader2,
+} from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import ProductCard from "@/components/product-card"
+import AddProductForm from "@/components/add-product-form"
+import AddImageForm from "@/components/add-image-form"
 import ColorPickerWithOpacity from "@/components/color-picker-with-opacity"
-import { useAuth } from "@/components/auth-provider"
-import { useToast } from "@/components/ui/use-toast"
 import PreviewMenu from "@/components/preview-menu"
+import { useToast } from "@/components/ui/use-toast"
 import { MenuService, type Product, type TitlePosition } from "@/lib/services/menu-service"
 import { UploadService } from "@/lib/services/upload-service"
+import { useAuth } from "@/components/auth-provider"
+import ClientOnly from "@/components/client-only"
 import {
   Dialog,
   DialogContent,
@@ -70,7 +90,6 @@ export default function CriarCardapio() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [isDeleteProductDialogOpen, setIsDeleteProductDialogOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [addItemTab, setAddItemTab] = useState<"product" | "image">("product")
 
   // Social media states
   const [instagram, setInstagram] = useState("")
@@ -401,32 +420,46 @@ export default function CriarCardapio() {
                 {/* Banner Preview */}
                 <div className="-mx-4 sm:mx-0">
                   <div className="sm:rounded-lg relative overflow-hidden" style={{ backgroundColor: tempBannerColor }}>
-                    {bannerImage ? (
-                      <div className="w-full relative">
-                        {/* Div para a cor de fundo */}
-                        <div className="absolute inset-0" style={{ backgroundColor: tempBannerColor }}></div>
+                    <ClientOnly>
+                      {bannerImage ? (
+                        <div className="w-full relative">
+                          {/* Div para a cor de fundo */}
+                          <div className="absolute inset-0" style={{ backgroundColor: tempBannerColor }}></div>
 
-                        {/* Imagem por cima da cor */}
-                        {bannerImage.startsWith("blob:") ? (
+                          {/* Imagem por cima da cor */}
                           <img
                             src={bannerImage || "/placeholder.svg"}
                             alt={menuName}
                             className="w-full object-contain relative z-10"
                             style={{ display: "block" }}
                           />
-                        ) : (
-                          <img
-                            src={bannerImage || "/placeholder.svg"}
-                            alt={menuName}
-                            className="w-full object-contain relative z-10"
-                            style={{ display: "block" }}
-                          />
-                        )}
 
-                        {/* Overlay para o título */}
-                        <div className="absolute inset-0 flex items-center justify-center z-20">
-                          <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent"></div>
+                          {/* Overlay para o título */}
+                          <div className="absolute inset-0 flex items-center justify-center z-20">
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent"></div>
 
+                            {titlePosition === "banner" && (
+                              <h3
+                                className="text-white font-bold text-2xl z-10 text-center px-4 drop-shadow-sm"
+                                style={{ fontFamily }}
+                              >
+                                {menuName || "Seu Cardápio"}
+                              </h3>
+                            )}
+                            {bannerLink && showLinkButton && (
+                              <div className="absolute top-2 right-2">
+                                <Link href={bannerLink} target="_blank" rel="noopener noreferrer">
+                                  <Button size="sm" variant="secondary">
+                                    Visitar
+                                  </Button>
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        // Se não tiver imagem, usamos uma altura mínima
+                        <div className="w-full py-16 flex items-center justify-center">
                           {titlePosition === "banner" && (
                             <h3
                               className="text-white font-bold text-2xl z-10 text-center px-4 drop-shadow-sm"
@@ -435,34 +468,13 @@ export default function CriarCardapio() {
                               {menuName || "Seu Cardápio"}
                             </h3>
                           )}
-                          {bannerLink && showLinkButton && (
-                            <div className="absolute top-2 right-2">
-                              <Link href={bannerLink} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" variant="secondary">
-                                  Visitar
-                                </Button>
-                              </Link>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    ) : (
-                      // Se não tiver imagem, usamos uma altura mínima
-                      <div className="w-full py-16 flex items-center justify-center">
-                        {titlePosition === "banner" && (
-                          <h3
-                            className="text-white font-bold text-2xl z-10 text-center px-4 drop-shadow-sm"
-                            style={{ fontFamily }}
-                          >
-                            {menuName || "Seu Cardápio"}
-                          </h3>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </ClientOnly>
                   </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2 mt-6">
                   <div>
                     <Label htmlFor="banner-color" className="text-base font-medium">
                       Cor do Banner
@@ -563,60 +575,366 @@ export default function CriarCardapio() {
               </CardContent>
             </Card>
 
-            {/* Resto do código permanece o mesmo */}
-            {/* ... */}
+            {/* Aparência */}
+            <Card>
+              <CardContent className="p-6">
+                <SectionHeader icon={<Palette className="h-4 w-4" />} title="Aparência" />
+
+                <div className="grid gap-6">
+                  <div>
+                    <Label htmlFor="font-family" className="text-base font-medium">
+                      Fonte do Cardápio
+                    </Label>
+                    <div className="mt-1.5">
+                      <Select value={fontFamily} onValueChange={setFontFamily}>
+                        <SelectTrigger id="font-family">
+                          <SelectValue placeholder="Selecione uma fonte" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableFonts.map((font) => (
+                            <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                              <span style={{ fontFamily: font.value }}>{font.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="mt-2 p-3 border rounded-lg text-center" style={{ fontFamily }}>
+                        <span>Exemplo de texto com a fonte {fontFamily}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="body-background-color" className="text-base font-medium">
+                        Cor de Fundo da Página
+                      </Label>
+                      <ColorPickerWithOpacity
+                        color={bodyBackgroundColor}
+                        onChange={setBodyBackgroundColor}
+                        onTempChange={setTempBodyBackgroundColor}
+                        allowTransparent={true}
+                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="background-color" className="text-base font-medium">
+                        Cor de Fundo do Cardápio
+                      </Label>
+                      <ColorPickerWithOpacity
+                        color={backgroundColor}
+                        onChange={setBackgroundColor}
+                        onTempChange={setTempBackgroundColor}
+                        allowTransparent={true}
+                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="text-color" className="text-base font-medium">
+                        Cor do Texto
+                      </Label>
+                      <ColorPickerWithOpacity
+                        color={textColor}
+                        onChange={setTextColor}
+                        onTempChange={setTempTextColor}
+                        allowTransparent={false}
+                        previewClassName="bg-gradient-to-r from-white to-gray-100 mt-1.5"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        A cor da descrição dos produtos será automaticamente derivada desta cor.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Redes Sociais */}
+            <Card>
+              <CardContent className="p-6">
+                <SectionHeader icon={<Share2 className="h-4 w-4" />} title="Redes Sociais" />
+
+                <div className="grid gap-6 md:grid-cols-3">
+                  <div>
+                    <Label htmlFor="instagram" className="flex items-center gap-2 mb-2">
+                      <Instagram className="h-4 w-4 text-pink-500" />
+                      Instagram
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                        @
+                      </span>
+                      <Input
+                        id="instagram"
+                        value={instagram}
+                        onChange={(e) => setInstagram(e.target.value)}
+                        placeholder="seu_instagram"
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="facebook" className="flex items-center gap-2 mb-2">
+                      <Facebook className="h-4 w-4 text-blue-600" />
+                      Facebook
+                    </Label>
+                    <Input
+                      id="facebook"
+                      value={facebook}
+                      onChange={(e) => setFacebook(e.target.value)}
+                      placeholder="sua_pagina ou URL completa"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="twitter" className="flex items-center gap-2 mb-2">
+                      <Twitter className="h-4 w-4 text-sky-500" />
+                      Twitter
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                        @
+                      </span>
+                      <Input
+                        id="twitter"
+                        value={twitter}
+                        onChange={(e) => setTwitter(e.target.value)}
+                        placeholder="seu_twitter"
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mt-6">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                      <LinkIcon className="h-3 w-3 text-[#E5324B]" />
+                    </div>
+                    Visualização do Footer
+                  </h4>
+                  <div className="border rounded-lg p-4 bg-white">
+                    <div className="flex justify-center space-x-6 mb-4">
+                      {instagram && (
+                        <div className="p-2 rounded-full bg-slate-50 text-pink-500">
+                          <Instagram className="h-5 w-5" />
+                        </div>
+                      )}
+                      {facebook && (
+                        <div className="p-2 rounded-full bg-slate-50 text-blue-600">
+                          <Facebook className="h-5 w-5" />
+                        </div>
+                      )}
+                      {twitter && (
+                        <div className="p-2 rounded-full bg-slate-50 text-sky-500">
+                          <Twitter className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+                    {instagram || facebook || twitter ? (
+                      <p className="text-sm text-center text-slate-500">Siga-nos nas redes sociais</p>
+                    ) : (
+                      <p className="text-sm text-center text-slate-400">
+                        Adicione pelo menos uma rede social para exibir o footer
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Produtos */}
+            <Card>
+              <CardContent className="p-6">
+                <SectionHeader icon={<Layers className="h-4 w-4" />} title="Produtos e Imagens" />
+
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Adicione produtos e imagens que serão exibidos no seu cardápio
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setEditingProduct(null)
+                        setShowAddProduct(true)
+                      }}
+                      variant="outline"
+                      className="bg-red-50 text-[#E5324B] border-red-200 hover:bg-red-100 hover:text-[#d02a41]"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar Produto
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setEditingProduct(null)
+                        setShowAddImage(true)
+                      }}
+                      variant="outline"
+                      className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      Adicionar Imagem
+                    </Button>
+                  </div>
+                </div>
+
+                {showAddProduct && (
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-lg">{editingProduct ? "Editar Produto" : "Novo Produto"}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <AddProductForm
+                        onAdd={editingProduct ? handleUpdateProduct : handleAddProduct}
+                        onCancel={() => {
+                          setShowAddProduct(false)
+                          setEditingProduct(null)
+                        }}
+                        initialProduct={editingProduct || undefined}
+                        isEdit={!!editingProduct}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {showAddImage && (
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Adicionar Imagem</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <AddImageForm
+                        onAdd={handleAddImage}
+                        onCancel={() => {
+                          setShowAddImage(false)
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {tempProducts.length > 0 ? (
+                  <div className="grid gap-4">
+                    {tempProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onRemove={() => handleDeleteProductClick(product)}
+                        onEdit={() => handleEditProduct(product)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 border rounded-lg bg-slate-50">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                        <ImageIcon className="h-8 w-8 text-[#E5324B]" />
+                      </div>
+                      <h4 className="font-medium mb-2">Nenhum item adicionado</h4>
+                      <p className="text-muted-foreground mb-4">
+                        Clique em "Adicionar Produto" ou "Adicionar Imagem" para começar a criar seu cardápio.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => setShowAddProduct(true)}
+                          variant="outline"
+                          className="bg-red-50 text-[#E5324B] border-red-200 hover:bg-red-100 hover:text-[#d02a41]"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Adicionar Produto
+                        </Button>
+                        <Button
+                          onClick={() => setShowAddImage(true)}
+                          variant="outline"
+                          className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
+                        >
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          Adicionar Imagem
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Save Button */}
+            <div className="flex justify-end mt-6 sticky bottom-4 z-10">
+              <Button
+                onClick={handleSaveMenu}
+                size="lg"
+                className="shadow-lg bg-[#E5324B] hover:bg-[#d02a41]"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Cardápio"
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Preview Column */}
           {showPreview && (
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="sticky top-20">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Eye className="h-5 w-5 text-[#E5324B]" />
-                    Preview em Tempo Real
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div
-                    className="rounded-lg overflow-hidden border"
-                    style={{ backgroundColor: tempBodyBackgroundColor }}
-                  >
-                    <div className="p-4">
-                      <PreviewMenu
-                        name={menuName}
-                        bannerColor={tempBannerColor}
-                        bannerImage={bannerImage}
-                        bannerLink={bannerLink}
-                        showLinkButton={showLinkButton}
-                        backgroundColor={tempBackgroundColor}
-                        textColor={tempTextColor}
-                        titlePosition={titlePosition}
-                        fontFamily={fontFamily}
-                        bodyBackgroundColor={tempBodyBackgroundColor}
-                        socialMedia={socialMedia}
-                        products={
-                          tempProducts.length > 0
-                            ? tempProducts.slice(0, 3)
-                            : [
-                                {
-                                  id: "preview-1",
-                                  name: "Produto de Exemplo",
-                                  description: "Descrição do produto de exemplo para visualização",
-                                  imageUrl: "/placeholder.svg?height=80&width=80",
-                                  externalLink: undefined,
-                                  menuId: "temp",
-                                  orderIndex: 0,
-                                  type: "product",
-                                },
-                              ]
-                        }
-                      />
+            <ClientOnly>
+              <div className="lg:col-span-2 space-y-6">
+                <Card className="sticky top-20">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-[#E5324B]" />
+                      Preview em Tempo Real
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div
+                      className="rounded-lg overflow-hidden border"
+                      style={{ backgroundColor: tempBodyBackgroundColor }}
+                    >
+                      <div className="p-4">
+                        <PreviewMenu
+                          name={menuName}
+                          bannerColor={tempBannerColor}
+                          bannerImage={bannerImage}
+                          bannerLink={bannerLink}
+                          showLinkButton={showLinkButton}
+                          backgroundColor={tempBackgroundColor}
+                          textColor={tempTextColor}
+                          titlePosition={titlePosition}
+                          fontFamily={fontFamily}
+                          bodyBackgroundColor={tempBodyBackgroundColor}
+                          socialMedia={socialMedia}
+                          products={
+                            tempProducts.length > 0
+                              ? tempProducts.slice(0, 3)
+                              : [
+                                  {
+                                    id: "preview-1",
+                                    name: "Produto de Exemplo",
+                                    description: "Descrição do produto de exemplo para visualização",
+                                    imageUrl: "/placeholder.svg?height=80&width=80",
+                                    externalLink: undefined,
+                                    menuId: "temp",
+                                    orderIndex: 0,
+                                    type: "product",
+                                  },
+                                ]
+                          }
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </ClientOnly>
           )}
         </div>
       </div>
