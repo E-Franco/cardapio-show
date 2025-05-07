@@ -13,7 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, LogOut, Users, FileText, Home, List, MenuIcon } from "lucide-react"
+// Adicionar o import para o ícone de diagnóstico
+import { User, LogOut, Users, FileText, Home, List, MenuIcon, ActivityIcon } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState, useCallback, useEffect } from "react"
 import { createSupabaseClient } from "@/lib/supabase/client"
@@ -23,11 +24,10 @@ export function MainNav() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [menuCount, setMenuCount] = useState(0) // Initialize state here
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Se não houver usuário, não renderiza a navegação
   if (!user) return null
-
-  const isAdmin = user.isAdmin
 
   // Função para lidar com o logout
   const handleLogout = useCallback(async () => {
@@ -38,7 +38,7 @@ export function MainNav() {
     }
   }, [logout])
 
-  // Componente de links de navegação
+  // Adicionar o link para a página de diagnóstico no componente NavLinks
   const NavLinks = () => (
     <>
       {isAdmin ? (
@@ -70,17 +70,37 @@ export function MainNav() {
               <span>Meus Cardápios</span>
             </Button>
           </Link>
+          <Link href="/diagnostico">
+            <Button
+              variant={pathname?.includes("/diagnostico") ? "default" : "ghost"}
+              className={pathname?.includes("/diagnostico") ? "bg-[#E5324B] hover:bg-[#d02a41]" : ""}
+            >
+              <ActivityIcon className="mr-2 h-4 w-4" />
+              <span>Diagnóstico</span>
+            </Button>
+          </Link>
         </>
       ) : (
-        <Link href="/">
-          <Button
-            variant={pathname === "/" ? "default" : "ghost"}
-            className={pathname === "/" ? "bg-[#E5324B] hover:bg-[#d02a41]" : ""}
-          >
-            <Home className="mr-2 h-4 w-4" />
-            <span>Meus Cardápios</span>
-          </Button>
-        </Link>
+        <>
+          <Link href="/">
+            <Button
+              variant={pathname === "/" ? "default" : "ghost"}
+              className={pathname === "/" ? "bg-[#E5324B] hover:bg-[#d02a41]" : ""}
+            >
+              <Home className="mr-2 h-4 w-4" />
+              <span>Meus Cardápios</span>
+            </Button>
+          </Link>
+          <Link href="/diagnostico">
+            <Button
+              variant={pathname?.includes("/diagnostico") ? "default" : "ghost"}
+              className={pathname?.includes("/diagnostico") ? "bg-[#E5324B] hover:bg-[#d02a41]" : ""}
+            >
+              <ActivityIcon className="mr-2 h-4 w-4" />
+              <span>Diagnóstico</span>
+            </Button>
+          </Link>
+        </>
       )}
     </>
   )
@@ -114,10 +134,16 @@ export function MainNav() {
       setMenuCount(menus.length)
     }
 
-    if (user && !isAdmin) {
+    if (user) {
       getMenuCount()
     }
-  }, [user, isAdmin])
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      setIsAdmin(user.isAdmin)
+    }
+  }, [user])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -30,12 +30,18 @@ export default function ShareMenuDialog({ menuId, menuName }: ShareMenuDialogPro
   const [showQRCode, setShowQRCode] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
-  // Gerar URL do cardápio - corrigido para usar /cardapio/[id]
-  const menuUrl = typeof window !== "undefined" ? `${window.location.origin}/cardapio/${menuId}` : `/cardapio/${menuId}`
+  // Gerar URL do cardápio - usando uma função para garantir que seja calculada apenas quando necessário
+  const getMenuUrl = useCallback(() => {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/cardapio/${menuId}`
+    }
+    return `/cardapio/${menuId}`
+  }, [menuId])
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(menuUrl)
+      const url = getMenuUrl()
+      await navigator.clipboard.writeText(url)
       setCopied(true)
       toast({
         title: "Link copiado!",
@@ -54,10 +60,11 @@ export default function ShareMenuDialog({ menuId, menuName }: ShareMenuDialogPro
   const handleShare = async () => {
     if (navigator.share) {
       try {
+        const url = getMenuUrl()
         await navigator.share({
           title: `Cardápio: ${menuName}`,
           text: `Confira o cardápio "${menuName}"`,
-          url: menuUrl,
+          url,
         })
 
         toast({
@@ -99,7 +106,7 @@ export default function ShareMenuDialog({ menuId, menuName }: ShareMenuDialogPro
             <Label htmlFor="link" className="sr-only">
               Link
             </Label>
-            <Input id="link" value={menuUrl} readOnly className="font-mono text-sm" />
+            <Input id="link" value={getMenuUrl()} readOnly className="font-mono text-sm" />
           </div>
           <Button type="button" size="sm" className="px-3" onClick={handleCopyLink}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -115,7 +122,7 @@ export default function ShareMenuDialog({ menuId, menuName }: ShareMenuDialogPro
 
           {showQRCode && (
             <div className="p-4 bg-white rounded-lg border">
-              <QRCode value={menuUrl} size={200} />
+              <QRCode value={getMenuUrl()} size={200} />
               <p className="text-center text-sm mt-2">Escaneie para acessar o cardápio</p>
             </div>
           )}

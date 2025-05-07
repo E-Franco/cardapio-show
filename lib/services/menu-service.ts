@@ -1,4 +1,3 @@
-// Vamos adicionar o método getPublicMenu que está faltando
 import { createSupabaseClient } from "@/lib/supabase/client"
 
 export type TitlePosition = "banner" | "below" | "hidden"
@@ -49,6 +48,9 @@ export class MenuService {
     return supabase
   }
 
+  /**
+   * Cria um novo cardápio
+   */
   static async createMenu(menu: Omit<Menu, "id" | "createdAt">): Promise<Menu> {
     try {
       const supabase = this.getSupabaseClient()
@@ -76,27 +78,16 @@ export class MenuService {
         throw error
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        bannerColor: data.banner_color || undefined,
-        bannerImage: data.banner_image || undefined,
-        bannerLink: data.banner_link || undefined,
-        showLinkButton: data.show_link_button,
-        backgroundColor: data.background_color || undefined,
-        textColor: data.text_color || undefined,
-        titlePosition: (data.title_position as TitlePosition) || "banner",
-        fontFamily: data.font_family || undefined,
-        bodyBackgroundColor: data.body_background_color || undefined,
-        userId: data.user_id,
-        createdAt: data.created_at,
-      }
+      return this.mapDatabaseMenuToMenu(data)
     } catch (error) {
       console.error("Error creating menu:", error)
       throw error
     }
   }
 
+  /**
+   * Obtém um cardápio pelo ID
+   */
   static async getMenu(id: string): Promise<Menu> {
     try {
       const supabase = this.getSupabaseClient()
@@ -108,27 +99,16 @@ export class MenuService {
         throw error
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        bannerColor: data.banner_color || undefined,
-        bannerImage: data.banner_image || undefined,
-        bannerLink: data.banner_link || undefined,
-        showLinkButton: data.show_link_button,
-        backgroundColor: data.background_color || undefined,
-        textColor: data.text_color || undefined,
-        titlePosition: (data.title_position as TitlePosition) || "banner",
-        fontFamily: data.font_family || undefined,
-        bodyBackgroundColor: data.body_background_color || undefined,
-        userId: data.user_id,
-        createdAt: data.created_at,
-      }
+      return this.mapDatabaseMenuToMenu(data)
     } catch (error) {
       console.error("Error getting menu:", error)
       throw error
     }
   }
 
+  /**
+   * Atualiza um cardápio existente
+   */
   static async updateMenu(id: string, menu: Partial<Menu>): Promise<Menu> {
     try {
       const supabase = this.getSupabaseClient()
@@ -157,27 +137,16 @@ export class MenuService {
         throw error
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        bannerColor: data.banner_color || undefined,
-        bannerImage: data.banner_image || undefined,
-        bannerLink: data.banner_link || undefined,
-        showLinkButton: data.show_link_button,
-        backgroundColor: data.background_color || undefined,
-        textColor: data.text_color || undefined,
-        titlePosition: (data.title_position as TitlePosition) || "banner",
-        fontFamily: data.font_family || undefined,
-        bodyBackgroundColor: data.body_background_color || undefined,
-        userId: data.user_id,
-        createdAt: data.created_at,
-      }
+      return this.mapDatabaseMenuToMenu(data)
     } catch (error) {
       console.error("Error updating menu:", error)
       throw error
     }
   }
 
+  /**
+   * Exclui um cardápio
+   */
   static async deleteMenu(id: string): Promise<void> {
     try {
       const supabase = this.getSupabaseClient()
@@ -194,6 +163,9 @@ export class MenuService {
     }
   }
 
+  /**
+   * Obtém todos os cardápios de um usuário
+   */
   static async getUserMenus(userId: string): Promise<Menu[]> {
     try {
       console.log("Getting user menus for user:", userId)
@@ -210,27 +182,16 @@ export class MenuService {
         throw error
       }
 
-      return data.map((menu) => ({
-        id: menu.id,
-        name: menu.name,
-        bannerColor: menu.banner_color || undefined,
-        bannerImage: menu.banner_image || undefined,
-        bannerLink: menu.banner_link || undefined,
-        showLinkButton: menu.show_link_button,
-        backgroundColor: menu.background_color || undefined,
-        textColor: menu.text_color || undefined,
-        titlePosition: (menu.title_position as TitlePosition) || "banner",
-        fontFamily: menu.font_family || undefined,
-        bodyBackgroundColor: menu.body_background_color || undefined,
-        userId: menu.user_id,
-        createdAt: menu.created_at,
-      }))
+      return data.map((menu) => this.mapDatabaseMenuToMenu(menu))
     } catch (error) {
       console.error("Error getting user menus:", error)
       throw error
     }
   }
 
+  /**
+   * Obtém todos os cardápios (para administradores)
+   */
   static async getAllMenus(): Promise<Menu[]> {
     try {
       const supabase = this.getSupabaseClient()
@@ -242,27 +203,16 @@ export class MenuService {
         throw error
       }
 
-      return data.map((menu) => ({
-        id: menu.id,
-        name: menu.name,
-        bannerColor: menu.banner_color || undefined,
-        bannerImage: menu.banner_image || undefined,
-        bannerLink: menu.banner_link || undefined,
-        showLinkButton: menu.show_link_button,
-        backgroundColor: menu.background_color || undefined,
-        textColor: data.text_color || undefined,
-        titlePosition: (menu.title_position as TitlePosition) || "banner",
-        fontFamily: menu.font_family || undefined,
-        bodyBackgroundColor: menu.body_background_color || undefined,
-        userId: menu.user_id,
-        createdAt: menu.created_at,
-      }))
+      return data.map((menu) => this.mapDatabaseMenuToMenu(menu))
     } catch (error) {
       console.error("Error getting all menus:", error)
       throw error
     }
   }
 
+  /**
+   * Cria ou atualiza as redes sociais de um cardápio
+   */
   static async upsertSocialMedia(socialMedia: SocialMedia): Promise<SocialMedia> {
     try {
       const supabase = this.getSupabaseClient()
@@ -334,6 +284,9 @@ export class MenuService {
     }
   }
 
+  /**
+   * Obtém as redes sociais de um cardápio
+   */
   static async getMenuSocialMedia(menuId: string): Promise<SocialMedia | null> {
     try {
       const supabase = this.getSupabaseClient()
@@ -362,6 +315,9 @@ export class MenuService {
     }
   }
 
+  /**
+   * Obtém os produtos de um cardápio
+   */
   static async getMenuProducts(menuId: string): Promise<Product[]> {
     try {
       const supabase = this.getSupabaseClient()
@@ -377,23 +333,16 @@ export class MenuService {
         throw error
       }
 
-      return data.map((product) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        imageUrl: product.image_url,
-        externalLink: product.external_link,
-        menuId: product.menu_id,
-        orderIndex: product.order_index,
-        type: product.type || "product",
-      }))
+      return data.map((product) => this.mapDatabaseProductToProduct(product))
     } catch (error) {
       console.error("Error getting menu products:", error)
       throw error
     }
   }
 
+  /**
+   * Adiciona um produto a um cardápio
+   */
   static async addProduct(product: Omit<Product, "id">): Promise<Product> {
     try {
       const supabase = this.getSupabaseClient()
@@ -418,23 +367,16 @@ export class MenuService {
         throw error
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        imageUrl: data.image_url,
-        externalLink: data.external_link,
-        menuId: data.menu_id,
-        orderIndex: data.order_index,
-        type: data.type || "product",
-      }
+      return this.mapDatabaseProductToProduct(data)
     } catch (error) {
       console.error("Error adding product:", error)
       throw error
     }
   }
 
+  /**
+   * Atualiza um produto existente
+   */
   static async updateProduct(
     id: string,
     product: Partial<Omit<Product, "id" | "menuId" | "orderIndex">>,
@@ -461,23 +403,16 @@ export class MenuService {
         throw error
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        imageUrl: data.image_url,
-        externalLink: data.external_link,
-        menuId: data.menu_id,
-        orderIndex: data.order_index,
-        type: data.type || "product",
-      }
+      return this.mapDatabaseProductToProduct(data)
     } catch (error) {
       console.error("Error updating product:", error)
       throw error
     }
   }
 
+  /**
+   * Exclui um produto
+   */
   static async deleteProduct(id: string): Promise<void> {
     try {
       const supabase = this.getSupabaseClient()
@@ -494,6 +429,9 @@ export class MenuService {
     }
   }
 
+  /**
+   * Adiciona uma imagem a um cardápio
+   */
   static async addImage(image: { imageUrl: string; menuId: string; orderIndex: number }): Promise<Product> {
     try {
       const supabase = this.getSupabaseClient()
@@ -515,21 +453,17 @@ export class MenuService {
         throw error
       }
 
-      return {
-        id: data.id,
-        name: data.name,
-        imageUrl: data.image_url,
-        menuId: data.menu_id,
-        orderIndex: data.order_index,
-        type: "image",
-      }
+      return this.mapDatabaseProductToProduct(data)
     } catch (error) {
       console.error("Error adding image:", error)
       throw error
     }
   }
 
-  // Adicionar o método getPublicMenu
+  /**
+   * Obtém um cardápio público pelo ID
+   * Retorna o cardápio, produtos e redes sociais
+   */
   static async getPublicMenu(
     id: string,
   ): Promise<{ menu: Menu | null; products: Product[]; socialMedia: SocialMedia | null }> {
@@ -537,44 +471,102 @@ export class MenuService {
       const supabase = this.getSupabaseClient()
 
       // Buscar o menu
-      const { data: menuData, error: menuError } = await supabase.from("menus").select("*").eq("id", id).single()
+      const { data: menuData, error: menuError } = await supabase.from("menus").select("*").eq("id", id).maybeSingle()
 
       if (menuError) {
-        if (menuError.code === "PGRST116") {
-          // Menu não encontrado
-          return { menu: null, products: [], socialMedia: null }
-        }
         console.error("Error getting public menu:", menuError)
         throw menuError
       }
 
-      // Converter dados do menu
-      const menu: Menu = {
-        id: menuData.id,
-        name: menuData.name,
-        bannerColor: menuData.banner_color || undefined,
-        bannerImage: menuData.banner_image || undefined,
-        bannerLink: menuData.banner_link || undefined,
-        showLinkButton: menuData.show_link_button,
-        backgroundColor: menuData.background_color || undefined,
-        textColor: menuData.text_color || undefined,
-        titlePosition: (menuData.title_position as TitlePosition) || "banner",
-        fontFamily: menuData.font_family || undefined,
-        bodyBackgroundColor: menuData.body_background_color || undefined,
-        userId: menuData.user_id,
-        createdAt: menuData.created_at,
+      if (!menuData) {
+        console.log("Menu not found:", id)
+        return { menu: null, products: [], socialMedia: null }
       }
 
+      // Converter dados do menu
+      const menu = this.mapDatabaseMenuToMenu(menuData)
+
       // Buscar produtos
-      const products = await this.getMenuProducts(id)
+      let products: Product[] = []
+      try {
+        products = await this.getMenuProducts(id)
+      } catch (error) {
+        console.error("Error getting menu products for public menu:", error)
+        // Não lançar erro, apenas retornar array vazio
+      }
 
       // Buscar redes sociais
-      const socialMedia = await this.getMenuSocialMedia(id)
+      let socialMedia: SocialMedia | null = null
+      try {
+        socialMedia = await this.getMenuSocialMedia(id)
+      } catch (error) {
+        console.error("Error getting social media for public menu:", error)
+        // Não lançar erro, apenas retornar null
+      }
 
       return { menu, products, socialMedia }
     } catch (error) {
       console.error("Error getting public menu:", error)
       throw error
+    }
+  }
+
+  /**
+   * Mapeia um objeto de menu do banco de dados para o formato da aplicação
+   */
+  private static mapDatabaseMenuToMenu(data: any): Menu {
+    return {
+      id: data.id,
+      name: data.name,
+      bannerColor: data.banner_color || undefined,
+      bannerImage: data.banner_image || undefined,
+      bannerLink: data.banner_link || undefined,
+      showLinkButton: data.show_link_button !== false, // Default to true if undefined
+      backgroundColor: data.background_color || undefined,
+      textColor: data.text_color || undefined,
+      titlePosition: (data.title_position as TitlePosition) || "banner",
+      fontFamily: data.font_family || undefined,
+      bodyBackgroundColor: data.body_background_color || undefined,
+      userId: data.user_id,
+      createdAt: data.created_at,
+    }
+  }
+
+  /**
+   * Mapeia um objeto de produto do banco de dados para o formato da aplicação
+   */
+  private static mapDatabaseProductToProduct(data: any): Product {
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      imageUrl: data.image_url,
+      externalLink: data.external_link,
+      menuId: data.menu_id,
+      orderIndex: data.order_index,
+      type: data.type || "product",
+    }
+  }
+
+  /**
+   * Testa a conexão com o Supabase
+   * Útil para verificar se as credenciais estão corretas
+   */
+  static async testConnection(): Promise<boolean> {
+    try {
+      const supabase = this.getSupabaseClient()
+      const { error } = await supabase.from("menus").select("id").limit(1)
+
+      if (error) {
+        console.error("Connection test failed:", error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error("Connection test error:", error)
+      return false
     }
   }
 }

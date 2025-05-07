@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Instagram, Facebook, Twitter, Loader2 } from "lucide-react"
@@ -12,6 +12,7 @@ import { useErrorHandler } from "@/hooks/use-error-handler"
 
 export default function CardapioPage() {
   const params = useParams()
+  const router = useRouter()
   const id = params?.id as string
   const { handleError } = useErrorHandler()
 
@@ -27,18 +28,34 @@ export default function CardapioPage() {
   const [currentLinkTitle, setCurrentLinkTitle] = useState("")
 
   // Função para abrir o modal com um link específico
-  const openExternalLink = (url: string, title = "Link Externo") => {
+  const openExternalLink = useCallback((url: string, title = "Link Externo") => {
     setCurrentExternalUrl(url)
     setCurrentLinkTitle(title)
     setIsLinkModalOpen(true)
-  }
+  }, [])
 
   useEffect(() => {
+    let isMounted = true
+
     const loadMenuData = async () => {
       try {
         setIsLoading(true)
+
+        // Verificar se o ID é válido
+        if (!id) {
+          setError("ID do cardápio inválido")
+          setIsLoading(false)
+          return
+        }
+
+        console.log("Carregando cardápio público:", id)
+
         // Carregar dados do menu
         const menuData = await MenuService.getPublicMenu(id)
+        console.log("Dados do cardápio público carregados:", menuData)
+
+        // Verificar se o componente ainda está montado
+        if (!isMounted) return
 
         if (menuData && menuData.menu) {
           setMenu(menuData.menu)
@@ -54,13 +71,20 @@ export default function CardapioPage() {
         }
       } catch (error) {
         console.error("Error loading menu data:", error)
+
+        // Verificar se o componente ainda está montado
+        if (!isMounted) return
+
         handleError(error, {
           title: "Erro ao carregar cardápio",
           message: "Não foi possível carregar os dados do cardápio.",
         })
         setError("Não foi possível carregar o cardápio. Verifique o link e tente novamente.")
       } finally {
-        setIsLoading(false)
+        // Verificar se o componente ainda está montado
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -68,33 +92,34 @@ export default function CardapioPage() {
 
     // Cleanup function
     return () => {
+      isMounted = false
       document.body.style.backgroundColor = ""
     }
   }, [id, handleError])
 
   // Função para gerar a URL do Instagram
-  const getInstagramUrl = (username: string) => {
+  const getInstagramUrl = useCallback((username: string) => {
     if (!username) return "#"
     if (username.startsWith("http")) return username
     return `https://instagram.com/${username.replace("@", "")}`
-  }
+  }, [])
 
   // Função para gerar a URL do Facebook
-  const getFacebookUrl = (username: string) => {
+  const getFacebookUrl = useCallback((username: string) => {
     if (!username) return "#"
     if (username.startsWith("http")) return username
     return `https://facebook.com/${username}`
-  }
+  }, [])
 
   // Função para gerar a URL do Twitter
-  const getTwitterUrl = (username: string) => {
+  const getTwitterUrl = useCallback((username: string) => {
     if (!username) return "#"
     if (username.startsWith("http")) return username
     return `https://twitter.com/${username.replace("@", "")}`
-  }
+  }, [])
 
   // Função para derivar uma cor mais clara para descrições
-  const getLighterColor = (color: string) => {
+  const getLighterColor = useCallback((color: string) => {
     if (!color) return "rgba(51, 51, 51, 0.7)"
 
     // Se a cor for rgba, ajustamos a opacidade
@@ -114,7 +139,7 @@ export default function CardapioPage() {
       }
     }
     return color
-  }
+  }, [])
 
   if (isLoading) {
     return (
@@ -133,7 +158,7 @@ export default function CardapioPage() {
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-[#E5324B] mb-4">Cardápio não encontrado</h1>
           <p className="text-muted-foreground mb-6">{error || "Este cardápio não existe ou foi removido."}</p>
-          <Button onClick={() => (window.location.href = "/")} className="bg-[#E5324B] hover:bg-[#d02a41]">
+          <Button onClick={() => router.push("/")} className="bg-[#E5324B] hover:bg-[#d02a41]">
             Voltar para a página inicial
           </Button>
         </div>

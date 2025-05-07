@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { MenuService, type Menu } from "@/lib/services/menu-service"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
+import ConnectionTest from "@/components/connection-test"
 
 /**
  * Página inicial da aplicação
@@ -43,6 +44,7 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const [menusLoaded, setMenusLoaded] = useState(false)
+  const [showConnectionTest, setShowConnectionTest] = useState(false)
 
   // Verificar configuração do Supabase
   useEffect(() => {
@@ -68,11 +70,15 @@ export default function Home() {
     }
 
     const loadMenus = async () => {
+      let isMounted = true
       setIsLoading(true)
+
       try {
         let userMenus: Menu[] = []
 
         try {
+          console.log("Carregando cardápios para o usuário:", user.id)
+
           if (user.isAdmin) {
             // Administrators can see all menus
             userMenus = await MenuService.getAllMenus()
@@ -81,10 +87,16 @@ export default function Home() {
             userMenus = await MenuService.getUserMenus(user.id)
           }
 
+          if (!isMounted) return
+
+          console.log("Cardápios carregados com sucesso:", userMenus.length)
           setMenus(userMenus)
           setMenusLoaded(true) // Marcar que os menus foram carregados
         } catch (error) {
           console.error("Erro ao carregar cardápios:", error)
+
+          if (!isMounted) return
+
           // Usar dados vazios em caso de erro
           setMenus([])
           setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
@@ -100,13 +112,26 @@ export default function Home() {
               },
             },
           })
+
+          // Mostrar o teste de conexão em caso de erro
+          setShowConnectionTest(true)
         }
       } catch (error) {
         console.error("Erro inesperado:", error)
+
+        if (!isMounted) return
+
         setMenus([])
         setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
+        setShowConnectionTest(true)
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+
+      return () => {
+        isMounted = false
       }
     }
 
@@ -118,11 +143,12 @@ export default function Home() {
         setIsLoading(false)
         setMenus([]) // Definir menus como array vazio em caso de timeout
         setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com timeout
+        setShowConnectionTest(true)
       }
     }, 5000) // 5 segundos de timeout
 
     return () => clearTimeout(safetyTimeout)
-  }, [user, authChecked, captureError, configError, menusLoaded]) // Removido isLoading das dependências
+  }, [user, authChecked, captureError, configError, menusLoaded, isLoading])
 
   /**
    * Verifica se o usuário pode criar um novo cardápio
@@ -270,6 +296,13 @@ export default function Home() {
             </Button>
           </div>
 
+          {/* Teste de conexão (mostrado apenas se houver erro) */}
+          {showConnectionTest && (
+            <div className="mb-4">
+              <ConnectionTest />
+            </div>
+          )}
+
           {/* Contador de cardápios com destaque */}
           {user && !user.isAdmin && (
             <div className="bg-white border rounded-lg p-4 shadow-sm">
@@ -324,6 +357,7 @@ export default function Home() {
                         alt={menu.name}
                         fill
                         className="object-cover"
+                        unoptimized={menu.bannerImage.startsWith("blob:") || menu.bannerImage.startsWith("data:")}
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent"></div>
