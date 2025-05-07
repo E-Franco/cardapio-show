@@ -575,21 +575,12 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                           ></div>
 
                           {/* Imagem por cima da cor */}
-                          {bannerImage.startsWith("blob:") ? (
-                            <img
-                              src={bannerImage || "/placeholder.svg"}
-                              alt={menuName || "Banner"}
-                              className="w-full object-contain relative z-10"
-                              style={{ display: "block" }}
-                            />
-                          ) : (
-                            <img
-                              src={bannerImage || "/placeholder.svg"}
-                              alt={menuName || "Banner"}
-                              className="w-full object-contain relative z-10"
-                              style={{ display: "block" }}
-                            />
-                          )}
+                          <img
+                            src={bannerImage || "/placeholder.svg"}
+                            alt={menuName || "Banner"}
+                            className="w-full object-contain relative z-10"
+                            style={{ display: "block" }}
+                          />
 
                           {/* Overlay para o título */}
                           <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -631,7 +622,7 @@ export default function EditarCardapio({ params }: { params: { id: string } }) {
                   </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2 mt-6">
                   <div>
                     <Label htmlFor="banner-color" className="text-base font-medium">
                       Cor do Banner
