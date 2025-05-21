@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,9 +28,12 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>(initialProduct?.imageUrl || "")
   const { toast } = useToast()
+  const isMounted = useRef(true)
 
   // Limpar o estado quando o componente é montado/desmontado
   useEffect(() => {
+    isMounted.current = true
+
     // Configurar o estado inicial com base no produto fornecido
     if (initialProduct) {
       setName(initialProduct.name || "")
@@ -46,6 +49,7 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       if (previewUrl && previewUrl.startsWith("blob:") && previewUrl !== initialProduct?.imageUrl) {
         URL.revokeObjectURL(previewUrl)
       }
+      isMounted.current = false
     }
   }, [initialProduct, previewUrl])
 
@@ -103,10 +107,14 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
 
     setIsUploading(true)
     try {
+      console.log("Iniciando upload de imagem para produto:", file.name)
       // Tentar fazer upload
       const uploadedUrl = await UploadService.uploadImage(file, "products")
+
+      if (!isMounted.current) return
+
       setImageUrl(uploadedUrl)
-      setIsUploading(false)
+      console.log("Upload concluído, URL:", uploadedUrl)
 
       toast({
         title: "Imagem carregada",
@@ -116,6 +124,9 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       })
     } catch (error) {
       console.error("Error uploading image:", error)
+
+      if (!isMounted.current) return
+
       toast({
         title: "Erro ao fazer upload",
         description: "Não foi possível fazer o upload da imagem. Usando versão local temporária.",
@@ -124,7 +135,10 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
 
       // Usar a URL de preview local como fallback
       setImageUrl(localPreview)
-      setIsUploading(false)
+    } finally {
+      if (isMounted.current) {
+        setIsUploading(false)
+      }
     }
   }
 

@@ -15,6 +15,17 @@ export class UploadService {
         return false
       }
 
+      // Criar cliente Supabase diretamente com as credenciais
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+      // Tentar uma operação simples para verificar a conexão
+      const { error } = await supabase.storage.getBucket(this.BUCKET_NAME)
+
+      if (error) {
+        console.warn("Erro ao verificar bucket do Supabase:", error.message)
+        return false
+      }
+
       return true
     } catch (error) {
       console.error("Erro ao verificar Supabase:", error)
@@ -24,6 +35,8 @@ export class UploadService {
 
   static async uploadImage(file: File, folder: string): Promise<string> {
     try {
+      console.log(`Iniciando upload de imagem: ${file.name} (${file.size} bytes) para pasta ${folder}`)
+
       // Criar URL local como fallback
       const localUrl = URL.createObjectURL(file)
 

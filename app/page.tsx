@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -42,13 +42,17 @@ export default function Home() {
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
-  const [menusLoaded, setMenusLoaded] = useState(false)
+  const isMounted = useRef(true)
 
   // Verificar configuração do Supabase
   useEffect(() => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       setConfigError("Configuração do Supabase incompleta. Verifique as variáveis de ambiente.")
       setIsLoading(false)
+    }
+
+    return () => {
+      isMounted.current = false
     }
   }, [])
 
@@ -59,73 +63,54 @@ export default function Home() {
     }
   }, [authLoading])
 
-  // Carregar menus apenas quando a autenticação for verificada e o usuário estiver presente
+  // Carregar menus quando a autenticação for verificada e o usuário estiver presente
   useEffect(() => {
-    // Evitar carregar menus se já foram carregados, se não há usuário,
-    // se a autenticação ainda não foi verificada ou se há erro de configuração
-    if (menusLoaded || !authChecked || !user || configError) {
+    // Evitar carregar menus se não há usuário, se a autenticação ainda não foi verificada ou se há erro de configuração
+    if (!authChecked || !user || configError) {
       return
     }
 
     const loadMenus = async () => {
-      let isMounted = true
+      console.log("Iniciando carregamento de cardápios para o usuário:", user.id)
       setIsLoading(true)
 
       try {
         let userMenus: Menu[] = []
 
-        try {
-          console.log("Carregando cardápios para o usuário:", user.id)
-
-          if (user.isAdmin) {
-            // Administrators can see all menus
-            userMenus = await MenuService.getAllMenus()
-          } else {
-            // Regular users see only their own menus
-            userMenus = await MenuService.getUserMenus(user.id)
-          }
-
-          if (!isMounted) return
-
-          console.log("Cardápios carregados com sucesso:", userMenus.length)
-          setMenus(userMenus)
-          setMenusLoaded(true) // Marcar que os menus foram carregados
-        } catch (error) {
-          console.error("Erro ao carregar cardápios:", error)
-
-          if (!isMounted) return
-
-          // Usar dados vazios em caso de erro
-          setMenus([])
-          setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
-          captureError(error, {
-            title: "Erro ao carregar cardápios",
-            description: "Não foi possível carregar seus cardápios. Tente novamente mais tarde.",
-            severity: "error",
-            action: {
-              label: "Tentar novamente",
-              onClick: () => {
-                setMenusLoaded(false) // Permitir nova tentativa
-                window.location.reload()
-              },
-            },
-          })
+        if (user.isAdmin) {
+          console.log("Carregando todos os cardápios (usuário admin)")
+          userMenus = await MenuService.getAllMenus()
+        } else {
+          console.log("Carregando cardápios do usuário:", user.id)
+          userMenus = await MenuService.getUserMenus(user.id)
         }
+
+        if (!isMounted.current) return
+
+        console.log("Cardápios carregados com sucesso:", userMenus.length)
+        setMenus(userMenus)
       } catch (error) {
-        console.error("Erro inesperado:", error)
+        console.error("Erro ao carregar cardápios:", error)
 
-        if (!isMounted) return
+        if (!isMounted.current) return
 
+        // Usar dados vazios em caso de erro
         setMenus([])
-        setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com erro
+        captureError(error, {
+          title: "Erro ao carregar cardápios",
+          description: "Não foi possível carregar seus cardápios. Tente novamente mais tarde.",
+          severity: "error",
+          action: {
+            label: "Tentar novamente",
+            onClick: () => {
+              window.location.reload()
+            },
+          },
+        })
       } finally {
-        if (isMounted) {
+        if (isMounted.current) {
           setIsLoading(false)
         }
-      }
-
-      return () => {
-        isMounted = false
       }
     }
 
@@ -133,15 +118,15 @@ export default function Home() {
 
     // Timeout de segurança para evitar loading infinito
     const safetyTimeout = setTimeout(() => {
-      if (isLoading) {
+      if (isLoading && isMounted.current) {
         setIsLoading(false)
-        setMenus([]) // Definir menus como array vazio em caso de timeout
-        setMenusLoaded(true) // Marcar que os menus foram carregados, mesmo com timeout
       }
-    }, 5000) // 5 segundos de timeout
+    }, 10000) // 10 segundos de timeout
 
-    return () => clearTimeout(safetyTimeout)
-  }, [user, authChecked, captureError, configError, menusLoaded])
+    return () => {
+      clearTimeout(safetyTimeout)
+    }
+  }, [user, authChecked, captureError, configError])
 
   /**
    * Verifica se o usuário pode criar um novo cardápio
@@ -335,7 +320,7 @@ export default function Home() {
                 >
                   <div
                     className="h-32 flex items-center justify-center relative overflow-hidden"
-                    style={{ backgroundColor: menu.bannerColor }}
+                    style={{ backgroundColor: menu.bannerColor || "#E5324B" }}
                   >
                     {menu.bannerImage && (
                       <Image
