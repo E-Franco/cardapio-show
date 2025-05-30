@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { MenuService, type Menu } from "@/lib/services/menu-service"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
+import { createSupabaseClient } from "@/lib/supabase/client"
 
 /**
  * Página inicial da aplicação
@@ -43,13 +44,45 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const isMounted = useRef(true)
+  const loadAttempted = useRef(false)
 
   // Verificar configuração do Supabase
   useEffect(() => {
+    // Verificar se as variáveis de ambiente estão definidas
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.error("Supabase URL or Anon Key is missing")
       setConfigError("Configuração do Supabase incompleta. Verifique as variáveis de ambiente.")
       setIsLoading(false)
+      return
     }
+
+    // Testar a conexão com o Supabase
+    const testSupabaseConnection = async () => {
+      try {
+        const supabase = createSupabaseClient()
+        if (!supabase) {
+          console.error("Failed to create Supabase client")
+          setConfigError("Não foi possível criar o cliente Supabase. Verifique as variáveis de ambiente.")
+          setIsLoading(false)
+          return
+        }
+
+        // Tentar fazer uma consulta simples para verificar a conexão
+        const { error } = await supabase.from("menus").select("count").limit(1)
+
+        if (error) {
+          console.error("Error testing Supabase connection:", error)
+          setConfigError(`Erro ao conectar ao Supabase: ${error.message}`)
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error("Error testing Supabase connection:", error)
+        setConfigError(`Erro ao conectar ao Supabase: ${error instanceof Error ? error.message : String(error)}`)
+        setIsLoading(false)
+      }
+    }
+
+    testSupabaseConnection()
 
     return () => {
       isMounted.current = false
@@ -66,9 +99,11 @@ export default function Home() {
   // Carregar menus quando a autenticação for verificada e o usuário estiver presente
   useEffect(() => {
     // Evitar carregar menus se não há usuário, se a autenticação ainda não foi verificada ou se há erro de configuração
-    if (!authChecked || !user || configError) {
+    if (!authChecked || !user || configError || loadAttempted.current) {
       return
     }
+
+    loadAttempted.current = true
 
     const loadMenus = async () => {
       console.log("Iniciando carregamento de cardápios para o usuário:", user.id)
@@ -87,7 +122,7 @@ export default function Home() {
 
         if (!isMounted.current) return
 
-        console.log("Cardápios carregados com sucesso:", userMenus.length)
+        console.log("Cardápios carregados com sucesso:", userMenus.length, userMenus)
         setMenus(userMenus)
       } catch (error) {
         console.error("Erro ao carregar cardápios:", error)
@@ -103,6 +138,7 @@ export default function Home() {
           action: {
             label: "Tentar novamente",
             onClick: () => {
+              loadAttempted.current = false
               window.location.reload()
             },
           },
@@ -119,6 +155,7 @@ export default function Home() {
     // Timeout de segurança para evitar loading infinito
     const safetyTimeout = setTimeout(() => {
       if (isLoading && isMounted.current) {
+        console.log("Safety timeout triggered - forcing loading state to false")
         setIsLoading(false)
       }
     }, 10000) // 10 segundos de timeout
@@ -126,7 +163,49 @@ export default function Home() {
     return () => {
       clearTimeout(safetyTimeout)
     }
-  }, [user, authChecked, captureError, configError])
+  }, [user, authChecked, captureError, configError, isLoading])
+
+  // Função para forçar o recarregamento dos cardápios
+  const forceReloadMenus = () => {
+    if (!user) return
+
+    setIsLoading(true)
+    loadAttempted.current = false
+
+    setTimeout(() => {
+      const loadMenus = async () => {
+        try {
+          let userMenus: Menu[] = []
+
+          if (user.isAdmin) {
+            userMenus = await MenuService.getAllMenus()
+          } else {
+            userMenus = await MenuService.getUserMenus(user.id)
+          }
+
+          if (isMounted.current) {
+            console.log("Cardápios recarregados:", userMenus.length, userMenus)
+            setMenus(userMenus)
+          }
+        } catch (error) {
+          console.error("Erro ao recarregar cardápios:", error)
+          if (isMounted.current) {
+            captureError(error, {
+              title: "Erro ao recarregar cardápios",
+              description: "Não foi possível recarregar seus cardápios.",
+              severity: "error",
+            })
+          }
+        } finally {
+          if (isMounted.current) {
+            setIsLoading(false)
+          }
+        }
+      }
+
+      loadMenus()
+    }, 500)
+  }
 
   /**
    * Verifica se o usuário pode criar um novo cardápio
@@ -263,15 +342,21 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-[#E5324B]">Seus Cardápios</h1>
               <p className="text-muted-foreground mt-1">Crie, gerencie e compartilhe seus cardápios digitais</p>
             </div>
-            <Button
-              onClick={handleCreateMenuClick}
-              disabled={!canCreateMenu()}
-              size="lg"
-              className="bg-[#E5324B] hover:bg-[#d02a41] transition-all shadow-md hover:shadow-lg"
-            >
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Criar Novo Cardápio
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={forceReloadMenus} variant="outline" size="lg" className="transition-all">
+                <Loader2 className="mr-2 h-5 w-5" />
+                Recarregar
+              </Button>
+              <Button
+                onClick={handleCreateMenuClick}
+                disabled={!canCreateMenu()}
+                size="lg"
+                className="bg-[#E5324B] hover:bg-[#d02a41] transition-all shadow-md hover:shadow-lg"
+              >
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Criar Novo Cardápio
+              </Button>
+            </div>
           </div>
 
           {/* Contador de cardápios com destaque */}
@@ -382,14 +467,20 @@ export default function Home() {
               <p className="text-muted-foreground text-center mb-6 max-w-md">
                 Você ainda não possui nenhum cardápio. Crie seu primeiro cardápio para começar.
               </p>
-              <Button
-                onClick={handleCreateMenuClick}
-                disabled={!canCreateMenu()}
-                className="bg-[#E5324B] hover:bg-[#d02a41]"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Criar Meu Primeiro Cardápio
-              </Button>
+              <div className="flex gap-4">
+                <Button onClick={forceReloadMenus} variant="outline" className="transition-all">
+                  <Loader2 className="mr-2 h-4 w-4" />
+                  Recarregar
+                </Button>
+                <Button
+                  onClick={handleCreateMenuClick}
+                  disabled={!canCreateMenu()}
+                  className="bg-[#E5324B] hover:bg-[#d02a41]"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Criar Meu Primeiro Cardápio
+                </Button>
+              </div>
             </div>
           )}
         </div>

@@ -199,6 +199,19 @@ export class MenuService {
       console.log("Getting user menus for user:", userId)
       const supabase = this.getSupabaseClient()
 
+      // Verificar se o cliente Supabase está funcionando
+      if (!supabase) {
+        console.error("Supabase client is null or undefined")
+        return []
+      }
+
+      // Verificar se o userId é válido
+      if (!userId) {
+        console.error("Invalid userId:", userId)
+        return []
+      }
+
+      console.log("Executing Supabase query for user menus...")
       const { data, error } = await supabase
         .from("menus")
         .select("*")
@@ -210,6 +223,14 @@ export class MenuService {
         throw error
       }
 
+      if (!data) {
+        console.log("No menus found for user:", userId)
+        return []
+      }
+
+      console.log(`Found ${data.length} menus for user:`, userId)
+
+      // Mapear os dados para o formato esperado
       return data.map((menu) => ({
         id: menu.id,
         name: menu.name,
@@ -227,20 +248,36 @@ export class MenuService {
       }))
     } catch (error) {
       console.error("Error getting user menus:", error)
-      throw error
+      // Retornar array vazio em vez de lançar erro
+      return []
     }
   }
 
   static async getAllMenus(): Promise<Menu[]> {
     try {
+      console.log("Getting all menus")
       const supabase = this.getSupabaseClient()
 
+      // Verificar se o cliente Supabase está funcionando
+      if (!supabase) {
+        console.error("Supabase client is null or undefined")
+        return []
+      }
+
+      console.log("Executing Supabase query for all menus...")
       const { data, error } = await supabase.from("menus").select("*").order("created_at", { ascending: false })
 
       if (error) {
         console.error("Error getting all menus:", error)
         throw error
       }
+
+      if (!data) {
+        console.log("No menus found")
+        return []
+      }
+
+      console.log(`Found ${data.length} menus in total`)
 
       return data.map((menu) => ({
         id: menu.id,
@@ -259,7 +296,8 @@ export class MenuService {
       }))
     } catch (error) {
       console.error("Error getting all menus:", error)
-      throw error
+      // Retornar array vazio em vez de lançar erro
+      return []
     }
   }
 

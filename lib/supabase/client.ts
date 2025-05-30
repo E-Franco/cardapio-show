@@ -1,27 +1,61 @@
 import { createClient } from "@supabase/supabase-js"
-import type { Database } from "./database.types"
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config"
 
-// Variável para armazenar a instância única do cliente
-let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
+// Variável para armazenar a instância do cliente Supabase
+let supabaseClient: ReturnType<typeof createClient> | null = null
 
 /**
- * Cria ou retorna uma instância existente do cliente Supabase
- * Implementa o padrão singleton para evitar múltiplas instâncias
+ * Cria e retorna um cliente Supabase
+ *
+ * Esta função implementa o padrão Singleton para evitar
+ * a criação de múltiplas instâncias do cliente Supabase.
  */
 export function createSupabaseClient() {
-  // Se já temos uma instância, retorna ela
-  if (supabaseClient) {
-    return supabaseClient
-  }
-
-  // Verifica se as variáveis de ambiente estão definidas
+  // Verificar se as variáveis de ambiente estão definidas
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error("Credenciais do Supabase não configuradas")
+    console.error("Supabase URL or Anon Key is missing")
     return null
   }
 
-  // Cria uma nova instância
-  supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
-  return supabaseClient
+  try {
+    // Se o cliente já existe, retorná-lo
+    if (supabaseClient) {
+      return supabaseClient
+    }
+
+    // Criar um novo cliente
+    console.log("Creating new Supabase client")
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+
+    // Verificar se o cliente foi criado com sucesso
+    if (!supabaseClient) {
+      console.error("Failed to create Supabase client")
+      return null
+    }
+
+    return supabaseClient
+  } catch (error) {
+    console.error("Error creating Supabase client:", error)
+    return null
+  }
+}
+
+/**
+ * Cria um cliente Supabase para uso no lado do cliente
+ *
+ * Esta função deve ser usada apenas em componentes do lado do cliente.
+ */
+export function createClientSupabaseClient() {
+  // Verificar se estamos no lado do cliente
+  if (typeof window === "undefined") {
+    console.error("createClientSupabaseClient should only be used on the client side")
+    return null
+  }
+
+  return createSupabaseClient()
 }
