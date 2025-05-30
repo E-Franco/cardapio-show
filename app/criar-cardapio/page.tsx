@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,20 +31,11 @@ import ProductCard from "@/components/product-card"
 import AddProductForm from "@/components/add-product-form"
 import AddImageForm from "@/components/add-image-form"
 import ColorPickerWithOpacity from "@/components/color-picker-with-opacity"
-import PreviewMenu from "@/components/preview-menu"
 import { useToast } from "@/components/ui/use-toast"
 import { MenuService, type Product, type TitlePosition } from "@/lib/services/menu-service"
 import { UploadService } from "@/lib/services/upload-service"
 import { useAuth } from "@/components/auth-provider"
 import ClientOnly from "@/components/client-only"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 
 // Lista de fontes disponíveis
 const availableFonts = [
@@ -60,10 +51,16 @@ const availableFonts = [
   { value: "Work Sans", label: "Work Sans" },
 ]
 
+// Interface para produtos temporários com arquivos
+interface TempProduct extends Product {
+  imageFile?: File
+}
+
 export default function CriarCardapio() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const { toast } = useToast()
+  const isMounted = useRef(true)
 
   // Estados básicos
   const [isLoading, setIsLoading] = useState(false)
@@ -71,6 +68,7 @@ export default function CriarCardapio() {
   const [bannerColor, setBannerColor] = useState("#E5324B")
   const [tempBannerColor, setTempBannerColor] = useState("#E5324B")
   const [bannerImage, setBannerImage] = useState<string | undefined>(undefined)
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)
   const [bannerLink, setBannerLink] = useState("")
   const [showLinkButton, setShowLinkButton] = useState(true)
   const [backgroundColor, setBackgroundColor] = useState("#ffffff")
@@ -81,15 +79,14 @@ export default function CriarCardapio() {
   const [fontFamily, setFontFamily] = useState("Poppins")
   const [bodyBackgroundColor, setBodyBackgroundColor] = useState("#f5f5f5")
   const [tempBodyBackgroundColor, setTempBodyBackgroundColor] = useState("#f5f5f5")
-  const [tempProducts, setTempProducts] = useState<Product[]>([])
+  const [tempProducts, setTempProducts] = useState<TempProduct[]>([])
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [showAddImage, setShowAddImage] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editingProduct, setEditingProduct] = useState<TempProduct | null>(null)
   const [isDeleteProductDialogOpen, setIsDeleteProductDialogOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<TempProduct | null>(null)
 
   // Social media states
   const [instagram, setInstagram] = useState("")
@@ -98,8 +95,14 @@ export default function CriarCardapio() {
 
   // Verificar autenticação
   useEffect(() => {
+    isMounted.current = true
+    
     if (!authLoading && !user) {
       router.push("/login")
+    }
+    
+    return () => {
+      isMounted.current = false
     }
   }, [user, authLoading, router])
 
@@ -113,32 +116,46 @@ export default function CriarCardapio() {
     }
   }, [tempBodyBackgroundColor])
 
-  const handleAddProduct = (product: Omit<Product, "id" | "menuId" | "orderIndex">) => {
+  const handleAddProduct = (product: Omit<Product, "id" | "menuId" | "orderIndex"> & { imageFile?: File }) => {
     const newProduct = {
       ...product,
       id: Date.now().toString(),
       menuId: "temp",
       orderIndex: tempProducts.length,
       type: "product",
+      imageFile: product.imageFile,
+      // Se temos um arquivo de imagem, usamos a URL de preview temporária
+      imageUrl: product.imageFile ? URL.createObjectURL(product.imageFile) : product.imageUrl,
     }
     setTempProducts([...tempProducts, newProduct])
     setShowAddProduct(false)
+    
+    toast({
+      title: "Produto adicionado",
+      description: "O produto foi adicionado ao cardápio. As imagens serão enviadas quando você salvar o cardápio.",
+    })
   }
 
-  const handleAddImage = (imageUrl: string) => {
+  const handleAddImage = (imageFile: File | null, previewUrl: string) => {
     const newImage = {
       id: Date.now().toString(),
       name: "Imagem",
-      imageUrl,
+      imageUrl: previewUrl,
+      imageFile: imageFile,
       menuId: "temp",
       orderIndex: tempProducts.length,
       type: "image" as const,
     }
     setTempProducts([...tempProducts, newImage])
     setShowAddImage(false)
+    
+    toast({
+      title: "Imagem adicionada",
+      description: "A imagem foi adicionada ao cardápio. Ela será enviada quando você salvar o cardápio.",
+    })
   }
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = (product: TempProduct) => {
     setEditingProduct(product)
     if (product.type === "image") {
       setShowAddImage(true)
@@ -147,20 +164,30 @@ export default function CriarCardapio() {
     }
   }
 
-  const handleUpdateProduct = (updatedProduct: Omit<Product, "id" | "menuId" | "orderIndex">) => {
+  const handleUpdateProduct = (updatedProduct: Omit<Product, "id" | "menuId" | "orderIndex"> & { imageFile?: File }) => {
     if (!editingProduct) return
 
     const updated = {
       ...editingProduct,
       ...updatedProduct,
+      // Se temos um novo arquivo de imagem, atualizamos a URL de preview
+      imageUrl: updatedProduct.imageFile 
+        ? URL.createObjectURL(updatedProduct.imageFile) 
+        : updatedProduct.imageUrl || editingProduct.imageUrl,
+      imageFile: updatedProduct.imageFile || editingProduct.imageFile,
     }
 
     setTempProducts(tempProducts.map((p) => (p.id === editingProduct.id ? updated : p)))
     setShowAddProduct(false)
     setEditingProduct(null)
+    
+    toast({
+      title: "Produto atualizado",
+      description: "O produto foi atualizado. As alterações serão salvas quando você salvar o cardápio.",
+    })
   }
 
-  const handleDeleteProductClick = (product: Product) => {
+  const handleDeleteProductClick = (product: TempProduct) => {
     setSelectedProduct(product)
     setIsDeleteProductDialogOpen(true)
   }
@@ -168,62 +195,70 @@ export default function CriarCardapio() {
   const handleDeleteProduct = () => {
     if (!selectedProduct) return
 
+    // Se o produto tem uma URL de preview local, revogá-la
+    if (selectedProduct.imageUrl && selectedProduct.imageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(selectedProduct.imageUrl)
+    }
+
     setTempProducts(tempProducts.filter((p) => p.id !== selectedProduct.id))
     setIsDeleteProductDialogOpen(false)
+    
+    toast({
+      title: "Item removido",
+      description: `O ${selectedProduct.type === "image" ? "imagem" : "produto"} foi removido do cardápio.`,
+    })
   }
 
-  const handleBannerImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setIsUploading(true)
-      try {
-        // Criar preview local imediatamente
-        const localPreview = URL.createObjectURL(file)
+    if (!file) return
 
-        // Upload the file to Supabase Storage
-        const imageUrl = await UploadService.uploadImage(file, "banners")
-        setBannerImage(imageUrl)
-
-        // Verificar se a URL é local (blob) ou do Supabase
-        if (imageUrl.startsWith("blob:")) {
-          toast({
-            title: "Imagem carregada localmente",
-            description: "A imagem está sendo usada localmente devido a restrições de permissão no servidor.",
-            variant: "warning",
-          })
-        } else {
-          toast({
-            title: "Imagem carregada",
-            description: "A imagem do banner foi carregada com sucesso.",
-          })
-        }
-      } catch (error) {
-        console.error("Erro ao fazer upload da imagem:", error)
-        toast({
-          title: "Erro ao fazer upload",
-          description: "Não foi possível fazer o upload da imagem do banner. Usando versão local temporária.",
-          variant: "destructive",
-        })
-
-        // Criar uma URL temporária para a imagem
-        const tempUrl = URL.createObjectURL(file)
-        setBannerImage(tempUrl)
-      } finally {
-        setIsUploading(false)
-      }
+    // Validar o tipo de arquivo
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Formato de arquivo inválido",
+        description: "Por favor, selecione uma imagem nos formatos JPEG, PNG, GIF ou WEBP.",
+        variant: "destructive",
+      })
+      return
     }
+
+    // Validar o tamanho do arquivo (5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O tamanho máximo permitido é 5MB.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Se já temos uma URL de preview, revogá-la
+    if (bannerImage && bannerImage.startsWith("blob:")) {
+      URL.revokeObjectURL(bannerImage)
+    }
+
+    // Criar preview local
+    const previewUrl = URL.createObjectURL(file)
+    setBannerImage(previewUrl)
+    setBannerImageFile(file)
+    
+    toast({
+      title: "Imagem selecionada",
+      description: "A imagem do banner será enviada quando você salvar o cardápio.",
+    })
   }
 
-  const handleRemoveBannerImage = async () => {
-    if (bannerImage && !bannerImage.includes("placeholder.svg")) {
-      try {
-        await UploadService.deleteImage(bannerImage)
-      } catch (error) {
-        console.error("Error deleting banner image:", error)
-      }
+  const handleRemoveBannerImage = () => {
+    // Se temos uma URL de preview local, revogá-la
+    if (bannerImage && bannerImage.startsWith("blob:")) {
+      URL.revokeObjectURL(bannerImage)
     }
 
     setBannerImage(undefined)
+    setBannerImageFile(null)
   }
 
   const handleSaveMenu = async () => {
@@ -238,11 +273,25 @@ export default function CriarCardapio() {
 
     setIsSaving(true)
     try {
+      // Primeiro, fazemos upload das imagens
+      let finalBannerImage = bannerImage
+      
+      // Se temos um arquivo de banner, fazer upload
+      if (bannerImageFile) {
+        try {
+          finalBannerImage = await UploadService.uploadFile(bannerImageFile, "banners")
+          console.log("Banner image uploaded:", finalBannerImage)
+        } catch (error) {
+          console.error("Error uploading banner image:", error)
+          // Continuamos com a URL local em caso de erro
+        }
+      }
+
       // Create menu
       const newMenu = await MenuService.createMenu({
         name: menuName || "Novo Cardápio",
         bannerColor,
-        bannerImage,
+        bannerImage: finalBannerImage,
         bannerLink,
         showLinkButton,
         backgroundColor,
@@ -256,18 +305,43 @@ export default function CriarCardapio() {
       // Add products
       for (let i = 0; i < tempProducts.length; i++) {
         const product = tempProducts[i]
+        
         if (product.type === "image") {
+          // Se temos um arquivo de imagem, fazer upload
+          let finalImageUrl = product.imageUrl
+          if (product.imageFile) {
+            try {
+              finalImageUrl = await UploadService.uploadFile(product.imageFile, "images")
+              console.log("Image uploaded:", finalImageUrl)
+            } catch (error) {
+              console.error("Error uploading image:", error)
+              // Continuamos com a URL local em caso de erro
+            }
+          }
+          
           await MenuService.addImage({
-            imageUrl: product.imageUrl || "",
+            imageUrl: finalImageUrl || "",
             menuId: newMenu.id,
             orderIndex: i,
           })
         } else {
+          // Se temos um arquivo de imagem, fazer upload
+          let finalImageUrl = product.imageUrl
+          if (product.imageFile) {
+            try {
+              finalImageUrl = await UploadService.uploadFile(product.imageFile, "products")
+              console.log("Product image uploaded:", finalImageUrl)
+            } catch (error) {
+              console.error("Error uploading product image:", error)
+              // Continuamos com a URL local em caso de erro
+            }
+          }
+          
           await MenuService.addProduct({
             name: product.name,
             description: product.description,
             price: product.price,
-            imageUrl: product.imageUrl,
+            imageUrl: finalImageUrl,
             externalLink: product.externalLink,
             menuId: newMenu.id,
             orderIndex: i,
@@ -286,6 +360,8 @@ export default function CriarCardapio() {
         })
       }
 
+      if (!isMounted.current) return
+
       toast({
         title: "Cardápio criado com sucesso!",
         description: "Seu cardápio foi salvo e já está disponível para compartilhamento.",
@@ -295,13 +371,18 @@ export default function CriarCardapio() {
       router.push("/")
     } catch (error) {
       console.error("Error saving menu:", error)
+      
+      if (!isMounted.current) return
+      
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao salvar o cardápio. Tente novamente.",
         variant: "destructive",
       })
     } finally {
-      setIsSaving(false)
+      if (isMounted.current) {
+        setIsSaving(false)
+      }
     }
   }
 
@@ -499,7 +580,6 @@ export default function CriarCardapio() {
                         accept="image/*"
                         onChange={handleBannerImageChange}
                         className="flex-1"
-                        disabled={isUploading}
                       />
                       {bannerImage && (
                         <Button
@@ -507,17 +587,15 @@ export default function CriarCardapio() {
                           size="icon"
                           onClick={handleRemoveBannerImage}
                           className="shrink-0"
-                          disabled={isUploading}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
-                    {isUploading && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Fazendo upload da imagem...</span>
-                      </div>
+                    {bannerImageFile && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        A imagem será enviada quando você salvar o cardápio.
+                      </p>
                     )}
                   </div>
 
@@ -841,129 +919,4 @@ export default function CriarCardapio() {
                       </p>
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => setShowAddProduct(true)}
-                          variant="outline"
-                          className="bg-red-50 text-[#E5324B] border-red-200 hover:bg-red-100 hover:text-[#d02a41]"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Adicionar Produto
-                        </Button>
-                        <Button
-                          onClick={() => setShowAddImage(true)}
-                          variant="outline"
-                          className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
-                        >
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          Adicionar Imagem
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Save Button */}
-            <div className="flex justify-end mt-6 sticky bottom-4 z-10">
-              <Button
-                onClick={handleSaveMenu}
-                size="lg"
-                className="shadow-lg bg-[#E5324B] hover:bg-[#d02a41]"
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  "Salvar Cardápio"
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Preview Column */}
-          {showPreview && (
-            <ClientOnly>
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="sticky top-20">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Eye className="h-5 w-5 text-[#E5324B]" />
-                      Preview em Tempo Real
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div
-                      className="rounded-lg overflow-hidden border"
-                      style={{ backgroundColor: tempBodyBackgroundColor }}
-                    >
-                      <div className="p-4">
-                        <PreviewMenu
-                          name={menuName}
-                          bannerColor={tempBannerColor}
-                          bannerImage={bannerImage}
-                          bannerLink={bannerLink}
-                          showLinkButton={showLinkButton}
-                          backgroundColor={tempBackgroundColor}
-                          textColor={tempTextColor}
-                          titlePosition={titlePosition}
-                          fontFamily={fontFamily}
-                          bodyBackgroundColor={tempBodyBackgroundColor}
-                          socialMedia={socialMedia}
-                          products={
-                            tempProducts.length > 0
-                              ? tempProducts.slice(0, 3)
-                              : [
-                                  {
-                                    id: "preview-1",
-                                    name: "Produto de Exemplo",
-                                    description: "Descrição do produto de exemplo para visualização",
-                                    imageUrl: "/placeholder.svg?height=80&width=80",
-                                    externalLink: undefined,
-                                    menuId: "temp",
-                                    orderIndex: 0,
-                                    type: "product",
-                                  },
-                                ]
-                          }
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </ClientOnly>
-          )}
-        </div>
-      </div>
-
-      {/* Dialog para confirmar exclusão de produto */}
-      <Dialog open={isDeleteProductDialogOpen} onOpenChange={setIsDeleteProductDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Excluir item</DialogTitle>
-            <DialogDescription>
-              <p className="mb-2">
-                Tem certeza que deseja excluir {selectedProduct?.type === "image" ? "esta imagem" : "o produto"}{" "}
-                {selectedProduct?.type !== "image" && `"${selectedProduct?.name}"`}?
-              </p>
-              <p className="text-red-500 font-medium">Esta ação é irreversível e não poderá ser desfeita.</p>
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="sm:justify-between">
-            <Button variant="outline" onClick={() => setIsDeleteProductDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteProduct} className="bg-[#E5324B] hover:bg-[#d02a41]">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
+                          onClick\

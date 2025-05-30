@@ -9,11 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, ImageIcon, LinkIcon, Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { UploadService } from "@/lib/services/upload-service"
 import type { Product } from "@/lib/services/menu-service"
 
 interface AddProductFormProps {
-  onAdd: (product: Omit<Product, "id" | "menuId" | "orderIndex">) => void
+  onAdd: (product: Omit<Product, "id" | "menuId" | "orderIndex"> & { imageFile?: File }) => void
   onCancel: () => void
   initialProduct?: Product
   isEdit?: boolean
@@ -23,9 +22,9 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
   const [name, setName] = useState(initialProduct?.name || "")
   const [description, setDescription] = useState(initialProduct?.description || "")
   const [price, setPrice] = useState<string>(initialProduct?.price ? String(initialProduct.price) : "")
-  const [imageUrl, setImageUrl] = useState(initialProduct?.imageUrl || "")
   const [externalLink, setExternalLink] = useState(initialProduct?.externalLink || "")
-  const [isUploading, setIsUploading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>(initialProduct?.imageUrl || "")
   const { toast } = useToast()
   const isMounted = useRef(true)
@@ -39,7 +38,6 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       setName(initialProduct.name || "")
       setDescription(initialProduct.description || "")
       setPrice(initialProduct.price ? String(initialProduct.price) : "")
-      setImageUrl(initialProduct.imageUrl || "")
       setExternalLink(initialProduct.externalLink || "")
       setPreviewUrl(initialProduct.imageUrl || "")
     }
@@ -63,14 +61,14 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       setName("")
       setDescription("")
       setPrice("")
-      setImageUrl("")
       setExternalLink("")
       setPreviewUrl("")
+      setSelectedFile(null)
     }
-    setIsUploading(false)
+    setIsSubmitting(false)
   }
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -104,47 +102,17 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
     // Criar preview local imediatamente
     const localPreview = URL.createObjectURL(file)
     setPreviewUrl(localPreview)
+    setSelectedFile(file)
 
-    setIsUploading(true)
-    try {
-      console.log("Iniciando upload de imagem para produto:", file.name)
-      // Tentar fazer upload
-      const uploadedUrl = await UploadService.uploadImage(file, "products")
-
-      if (!isMounted.current) return
-
-      setImageUrl(uploadedUrl)
-      console.log("Upload concluído, URL:", uploadedUrl)
-
-      toast({
-        title: "Imagem carregada",
-        description: uploadedUrl.startsWith("blob:")
-          ? "A imagem está sendo usada localmente."
-          : "A imagem foi carregada com sucesso.",
-      })
-    } catch (error) {
-      console.error("Error uploading image:", error)
-
-      if (!isMounted.current) return
-
-      toast({
-        title: "Erro ao fazer upload",
-        description: "Não foi possível fazer o upload da imagem. Usando versão local temporária.",
-        variant: "destructive",
-      })
-
-      // Usar a URL de preview local como fallback
-      setImageUrl(localPreview)
-    } finally {
-      if (isMounted.current) {
-        setIsUploading(false)
-      }
-    }
+    toast({
+      title: "Imagem selecionada",
+      description: "A imagem será enviada quando você salvar o produto.",
+    })
   }
 
-  const handleRemoveImage = async () => {
+  const handleRemoveImage = () => {
     // Se a imagem for do produto inicial e estivermos editando, perguntar antes de excluir
-    if (isEdit && imageUrl === initialProduct?.imageUrl) {
+    if (isEdit && previewUrl === initialProduct?.imageUrl) {
       if (!confirm("Tem certeza que deseja remover esta imagem?")) {
         return
       }
@@ -155,17 +123,8 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       URL.revokeObjectURL(previewUrl)
     }
 
-    // Se for uma imagem armazenada (não placeholder), tentar excluí-la
-    if (imageUrl && !imageUrl.includes("placeholder.svg")) {
-      try {
-        await UploadService.deleteImage(imageUrl)
-      } catch (error) {
-        console.error("Error deleting image:", error)
-      }
-    }
-
-    setImageUrl("")
     setPreviewUrl("")
+    setSelectedFile(null)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -179,20 +138,24 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
       return
     }
 
+    setIsSubmitting(true)
+
     const parsedPrice = price ? Number.parseFloat(price.replace(",", ".")) : null
+
+    // Se estamos editando e não selecionamos um novo arquivo, mantemos a URL original
+    const imageUrl = isEdit && !selectedFile ? initialProduct?.imageUrl || null : null
 
     onAdd({
       name: name.trim(),
       description: description.trim() || null,
       price: parsedPrice,
-      imageUrl: imageUrl || null,
+      imageUrl: imageUrl,
+      imageFile: selectedFile || undefined,
       externalLink: externalLink.trim() || null,
       type: "product",
     })
 
-    if (!isEdit) {
-      resetForm()
-    }
+    // Não resetamos o formulário aqui, pois o componente pai vai lidar com isso
   }
 
   const handleCancel = () => {
@@ -288,29 +251,23 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
                 accept="image/*"
                 onChange={handleImageChange}
                 className="flex-1"
-                disabled={isUploading}
+                disabled={isSubmitting}
                 // Importante: adicionar key para forçar a recriação do componente
                 key={`product-image-${isEdit ? initialProduct?.id : Date.now()}`}
               />
-              {imageUrl && (
+              {previewUrl && (
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   onClick={handleRemoveImage}
                   className="shrink-0"
-                  disabled={isUploading}
+                  disabled={isSubmitting}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
-            {isUploading && (
-              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Fazendo upload da imagem...</span>
-              </div>
-            )}
           </div>
 
           {previewUrl ? (
@@ -334,11 +291,11 @@ export default function AddProductForm({ onAdd, onCancel, initialProduct, isEdit
         <Button type="button" variant="outline" onClick={handleCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isUploading} className="bg-[#E5324B] hover:bg-[#d02a41]">
-          {isUploading ? (
+        <Button type="submit" disabled={isSubmitting} className="bg-[#E5324B] hover:bg-[#d02a41]">
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Carregando...
+              {isEdit ? "Salvando..." : "Adicionando..."}
             </>
           ) : isEdit ? (
             "Salvar Alterações"

@@ -8,17 +8,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { UploadService } from "@/lib/services/upload-service"
 
 interface AddImageFormProps {
-  onAdd: (imageUrl: string) => void
+  onAdd: (imageFile: File | null, previewUrl: string) => void
   onCancel: () => void
 }
 
 export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
-  const [imageUrl, setImageUrl] = useState<string>("")
-  const [isUploading, setIsUploading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const isMounted = useRef(true)
 
@@ -41,12 +40,12 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       URL.revokeObjectURL(previewUrl)
     }
 
-    setImageUrl("")
+    setSelectedFile(null)
     setPreviewUrl("")
-    setIsUploading(false)
+    setIsLoading(false)
   }
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -80,49 +79,19 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
     // Criar preview local imediatamente
     const localPreview = URL.createObjectURL(file)
     setPreviewUrl(localPreview)
+    setSelectedFile(file)
 
-    setIsUploading(true)
-    try {
-      console.log("Iniciando upload de imagem:", file.name)
-      // Tentar fazer upload
-      const uploadedUrl = await UploadService.uploadImage(file, "images")
-
-      if (!isMounted.current) return
-
-      setImageUrl(uploadedUrl)
-      console.log("Upload concluído, URL:", uploadedUrl)
-
-      toast({
-        title: "Imagem carregada",
-        description: uploadedUrl.startsWith("blob:")
-          ? "A imagem está sendo usada localmente."
-          : "A imagem foi carregada com sucesso.",
-      })
-    } catch (error) {
-      console.error("Error uploading image:", error)
-
-      if (!isMounted.current) return
-
-      toast({
-        title: "Erro ao fazer upload",
-        description: "Não foi possível fazer o upload da imagem. Usando versão local temporária.",
-        variant: "destructive",
-      })
-
-      // Usar a URL de preview local como fallback
-      setImageUrl(localPreview)
-    } finally {
-      if (isMounted.current) {
-        setIsUploading(false)
-      }
-    }
+    toast({
+      title: "Imagem selecionada",
+      description: "A imagem será enviada quando você salvar o formulário.",
+    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Se não temos nem imageUrl nem previewUrl, mostrar erro
-    if (!imageUrl && !previewUrl) {
+    // Se não temos nem arquivo nem previewUrl, mostrar erro
+    if (!selectedFile && !previewUrl) {
       toast({
         title: "Imagem obrigatória",
         description: "Por favor, selecione uma imagem para continuar.",
@@ -131,10 +100,12 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
       return
     }
 
-    // Se temos uma URL de imagem, usamos ela, caso contrário usamos a URL de preview
-    const finalImageUrl = imageUrl || previewUrl
-    onAdd(finalImageUrl)
-    resetForm()
+    setIsLoading(true)
+
+    // Passar o arquivo e a URL de preview para o componente pai
+    onAdd(selectedFile, previewUrl)
+
+    // Não resetamos o formulário aqui, pois o componente pai vai lidar com isso
   }
 
   const handleCancel = () => {
@@ -155,16 +126,10 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              disabled={isUploading}
+              disabled={isLoading}
               // Importante: adicionar key para forçar a recriação do componente
               key={`image-input-${Date.now()}`}
             />
-            {isUploading && (
-              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Fazendo upload da imagem...</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -182,11 +147,11 @@ export default function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
         <Button type="button" variant="outline" onClick={handleCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isUploading} className="bg-[#E5324B] hover:bg-[#d02a41]">
-          {isUploading ? (
+        <Button type="submit" disabled={isLoading} className="bg-[#E5324B] hover:bg-[#d02a41]">
+          {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Carregando...
+              Adicionando...
             </>
           ) : (
             "Adicionar Imagem"
